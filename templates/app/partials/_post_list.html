@@ -1,0 +1,65 @@
+{% for post in posts %}
+<div class="post-card bg-white rounded-xl shadow-md overflow-hidden" id="post-{{ post.id }}">
+    <div class="p-5 flex gap-4">
+        <!-- Vote Section -->
+        <div class="vote-section flex flex-col items-center gap-1">
+            <button class="vote-btn p-1 rounded-full {% if post.user_vote_value == 1 %}bg-green-200{% else %}hover:bg-green-100{% endif %}"
+                    data-url="{% url 'vote' model_name='post' pk=post.id direction='up' %}">
+                <i data-feather="arrow-up" class="w-6 h-6 text-green-600"></i>
+            </button>
+            
+            {# Gunakan 'score' dari anotasi di view untuk konsistensi #}
+            <span class="vote-score font-bold text-lg">{{ post.score }}</span> 
+            
+            {# PERBAIKAN LOGIKA DISABLED: Izinkan pembatalan downvote pada skor 0 #}
+            <button class="vote-btn p-1 rounded-full {% if post.user_vote_value == -1 %}bg-red-200{% else %}hover:bg-red-100{% endif %}
+                        {% if post.score <= 0 and post.user_vote_value != -1 %}disabled:opacity-50{% endif %}"
+                    data-url="{% url 'vote' model_name='post' pk=post.id direction='down' %}"
+                    {% if post.score <= 0 and post.user_vote_value != -1 %}disabled{% endif %}>
+                <i data-feather="arrow-down" class="w-6 h-6 text-red-600"></i>
+            </button>
+        </div>
+        <!-- Content Section -->
+        <div class="flex-grow">
+            <div class="text-xs text-deep-brown-600 mb-2">
+                <span>Posted by 
+                    <a href="{% url 'profile_detail' username=post.author.username %}" class="font-semibold hover:shadow-underline">
+                        u/{{ post.author.username }}
+                    </a>
+                </span>
+            </div>
+            <h2 class="text-xl font-bold font-poppins text-deep-brown mb-2">
+                <a href="{% url 'post_detail' slug=post.slug %}" class="hover:shadow-underline transition-colors hover:text-secondary-accent">{{ post.title }}</a>
+            </h2>
+            
+            {% if post.cover_image and post.cover_image.url %}
+                <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" class="rounded-lg max-h-96 w-full object-cover my-3">
+            {% endif %}
+            
+            <p class="text-deep-brown-800 font-lato text-sm leading-relaxed mb-4">
+                {{ post.content|truncatewords:40 }}
+            </p>
+            
+            <div class="flex flex-wrap gap-2 mb-4">
+                {% if post.game_title %}
+                <span class="text-xs font-semibold bg-secondary-accent/20 text-secondary-accent py-1 px-3 rounded-full">{{ post.game_title.title }}</span>
+                {% endif %}
+                {% if post.category %}
+                <span class="text-xs font-semibold bg-gray-200 text-deep-brown-800 py-1 px-3 rounded-full">{{ post.category.name }}</span>
+                {% endif %}
+            </div>
+
+            <div class="flex items-center gap-6 text-sm text-deep-brown-700 font-semibold">
+                <a href="{% url 'post_detail' slug=post.slug %}#comments" class="flex items-center gap-2 hover:text-primary-accent transition-colors"><i data-feather="message-square" class="w-5 h-5"></i> {{ post.comments.count|default:"0" }} Comments</a>
+                <div id="save-button-container-{{ post.id }}">
+                    {% include 'app/partials/_save_button.html' with post=post %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% empty %}
+    <div class="bg-white rounded-xl p-8 text-center">
+        <h3 class="text-xl font-bold">No Posts Found</h3>
+    </div>
+{% endfor %}

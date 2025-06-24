@@ -1,0 +1,103 @@
+/*
+=================================================================
+1. DIREKTIF TAILWIND
+=================================================================
+Bagian ini tetap wajib untuk mengimpor semua gaya dari Tailwind.
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+    .tv-static-bg {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .tv-static-bg::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: 
+        radial-gradient(circle at 20% 50%, transparent 20%, rgba(255, 217, 0, 0.1) 21%, rgba(255, 217, 0, 0.1) 34%, transparent 35%),
+        linear-gradient(0deg, rgba(255, 217, 0, 0.05) 50%, transparent 50%);
+        opacity: 0.3;
+        pointer-events: none;
+    }
+}
+
+/*
+=================================================================
+2. GAYA DASAR DENGAN @layer base
+=================================================================
+Menerapkan gaya dasar ke elemen HTML seperti body dan h1.
+Ini adalah cara yang lebih "Tailwind" daripada menuliskannya di luar layer.
+*/
+@layer base {
+html {
+    @apply scroll-smooth;
+}
+
+body {
+    /* Kelas-kelas ini berasal dari tailwind.config.js */
+    @apply bg-soft-cream text-deep-brown font-lato antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    @apply font-poppins;
+}
+}
+
+/*
+=================================================================
+3. KOMPONEN KUSTOM DENGAN @layer components
+=================================================================
+Kelas-kelas tombol ini sekarang menggunakan nama kelas yang
+didefinisikan langsung di tailwind.config.js.
+*/
+@layer components {
+/* Kelas dasar untuk semua tombol */
+.btn {
+    @apply inline-block font-bold font-poppins py-2 px-6 rounded-lg shadow-md;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply transition-all duration-200 ease-in-out;
+    @apply transform hover:scale-105;
+}
+
+/* Modifikasi warna untuk tombol Primary */
+.btn-primary {
+    @apply bg-primary-accent text-deep-brown;
+    @apply focus:ring-primary-accent;
+    @apply hover:opacity-90;
+}
+
+/* Modifikasi warna untuk tombol Secondary */
+.btn-secondary {
+    @apply bg-secondary-accent text-white;
+    @apply focus:ring-secondary-accent;
+    @apply hover:opacity-90;
+}
+
+/* Modifikasi warna untuk tombol Danger */
+.btn-danger {
+    @apply bg-red-600 text-white;
+    @apply focus:ring-red-500;
+    @apply hover:bg-red-700;
+}
+
+/* Modifikasi untuk tombol Outline */
+.btn-outline {
+    @apply bg-transparent border-2 border-deep-brown text-deep-brown;
+    @apply shadow-none hover:bg-deep-brown hover:text-white;
+    @apply focus:ring-deep-brown;
+}
+
+/* Modifikasi untuk tombol Ghost/Polos */
+.btn-ghost {
+    @apply bg-transparent text-deep-brown shadow-none;
+    @apply hover:bg-gray-200/50;
+}
+}

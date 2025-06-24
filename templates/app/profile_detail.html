@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head_title %}{{ profile_user.username }}'s Profile{% endblock head_title %}
+
+{% block body %}
+<main class="container mx-auto p-4 md:p-6 lg:p-8">
+    <div class="grid lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Kolom Kiri: Sidebar Profil -->
+        <aside class="lg:col-span-4 lg:sticky lg:top-28 space-y-6">
+            <div class="bg-white rounded-xl shadow-lg p-6 text-center relative">
+                <!-- Profile image with proper spacing -->
+                <div class="relative -mt-12 mb-4">
+                    <img src="{{ profile_user.avatar.url }}" alt="{{ profile_user.username }}'s Avatar" class="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-primary-accent shadow-md object-cover mx-auto bg-white">
+                </div>
+                
+                <h1 class="text-xl md:text-2xl font-bold font-poppins text-deep-brown">{{ profile_user.username }}</h1>
+                <p class="text-sm text-deep-brown-700 mt-2 px-4">{{ profile_user.bio|default:"No bio yet." }}</p>
+
+                <!-- Statistik Pengguna -->
+                <div class="flex justify-center gap-4 md:gap-6 mt-6 border-t border-b border-deep-brown-200 py-3">
+                    <div class="text-center">
+                        <p class="text-lg md:text-xl font-bold font-poppins">{{ posts.count }}</p>
+                        <p class="text-xs text-deep-brown-600">Posts</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-lg md:text-xl font-bold font-poppins">{{ followers_count }}</p>
+                        <p class="text-xs text-deep-brown-600">Followers</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-lg md:text-xl font-bold font-poppins">{{ following_count }}</p>
+                        <p class="text-xs text-deep-brown-600">Following</p>
+                    </div>
+                </div>
+
+                <!-- Tombol Aksi Dinamis -->
+                <div class="mt-6">
+                    {% if profile_user == request.user %}
+                        <a href="{% url 'account_settings' %}" class="w-full btn btn-primary">Edit Profile</a>
+                    {% else %}
+                        <form action="{% url 'toggle_follow' username=profile_user.username %}" method="post">
+                            {% csrf_token %}
+                            {% if is_following %}
+                                <button type="submit" class="w-full btn btn-outline">Unfollow</button>
+                            {% else %}
+                                <button type="submit" class="w-full btn btn-secondary">Follow</button>
+                            {% endif %}
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </aside>
+
+        <!-- Kolom Kanan: Konten dengan Tab -->
+        <div class="lg:col-span-8" x-data="{ tab: 'posts' }">
+            <!-- Tombol Tab (DIPERBAIKI) -->
+            <div class="flex border-b-2 border-deep-brown-200 mb-6 gap-2 md:gap-4 overflow-x-auto">
+                <button 
+                    @click="tab = 'posts'" 
+                    :class="{ 
+                        'border-primary-accent text-deep-brown font-semibold': tab === 'posts',
+                        'border-transparent text-deep-brown-600 hover:text-secondary-accent': tab !== 'posts'
+                    }" 
+                    class="font-poppins py-2 px-3 md:px-5 border-b-4 whitespace-nowrap transition-colors">
+                    Posts
+                </button>
+                {% if profile_user == request.user %}
+                <button 
+                    @click="tab = 'saved'" 
+                    :class="{ 
+                        'border-primary-accent text-deep-brown font-semibold': tab === 'saved',
+                        'border-transparent text-deep-brown-600 hover:text-secondary-accent': tab !== 'saved'
+                    }" 
+                    class="font-poppins py-2 px-3 md:px-5 border-b-4 whitespace-nowrap transition-colors">
+                    Saved
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Panel Konten Tab -->
+            <div>
+                <!-- Panel untuk Postingan -->
+                <div x-show="tab === 'posts'" class="space-y-6">
+                    {% for post in posts %}
+                        {% include 'app/partials/_post_card_simple.html' with post=post %}
+                    {% empty %}
+                        <div class="bg-white rounded-xl shadow-md p-8 text-center">
+                            <p class="text-deep-brown-700">{{ profile_user.username }} has not created any posts yet.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+
+
+                <!-- Panel untuk Postingan Tersimpan -->
+                {% if profile_user == request.user %}
+                <div x-show="tab === 'saved'" style="display: none;" class="space-y-6">
+                    {% for post in saved_posts %}
+                        {% include 'app/partials/_post_card_simple.html' with post=post %}
+                    {% empty %}
+                        <div class="bg-white rounded-xl shadow-md p-8 text-center">
+                            <p class="text-deep-brown-700">You haven't saved any posts yet.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock body %}

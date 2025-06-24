@@ -1,0 +1,32 @@
+{# Template ini akan menampilkan pesan sukses yang dinamis #}
+<div x-data="{ open: true }" x-show="open" @keydown.escape.window="open = false" x-cloak>
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div @click.away="open = false" 
+             class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 text-center"
+             x-show="open" 
+             x-transition>
+
+            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                <i data-feather="check" class="h-6 w-6 text-green-600"></i>
+            </div>
+
+            <h2 class="mt-4 text-2xl font-bold font-poppins text-deep-brown">Success!</h2>
+            <p class="mt-2 text-deep-brown-700">
+                {{ message|default:"Your action was successful." }}
+            </p>
+            
+            <div class="mt-6">
+                {# Tombol ini akan mengarahkan ke halaman home #}
+                <a href="{% url 'home' %}" class="w-full btn btn-primary">
+                    Continue
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+</script>

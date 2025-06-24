@@ -1,0 +1,86 @@
+{% extends 'base.html' %} 
+{% load static %}
+
+{% block head_title %}Manage Emails{% endblock head_title %}
+
+{% block body %}
+<main class="container mx-auto p-4 md:p-6 lg:p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold font-poppins text-deep-brown">Manage Email Addresses</h1>
+            <p class="text-lg text-deep-brown-700 mt-2">Add, remove, or set your primary email address.</p>
+        </header>
+
+        <div class="space-y-8">
+            <!-- Daftar Email yang Sudah Ada -->
+            <section class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                <h2 class="text-2xl font-bold font-poppins text-deep-brown border-b border-deep-brown-200 pb-4 mb-6">Your Emails</h2>
+                {% if user.emailaddress_set.all %}
+                    <form action="{% url 'account_email' %}" class="space-y-4" method="post">
+                        {% csrf_token %}
+                        {% for emailaddress in user.emailaddress_set.all %}
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg {% if emailaddress.primary %}bg-primary-accent/10 border-l-4 border-primary-accent{% else %}bg-gray-50{% endif %}">
+                            <div class="flex-grow">
+                                <div class="flex items-center gap-3">
+                                    <label for="email_radio_{{forloop.counter}}" class="font-semibold text-deep-brown cursor-pointer">
+                                        {{ emailaddress.email }}
+                                    </label>
+                                    {% if emailaddress.primary %}
+                                        <span class="text-xs font-bold text-deep-brown bg-primary-accent px-2 py-0.5 rounded-full">Primary</span>
+                                    {% endif %}
+                                    {% if emailaddress.verified %}
+                                        <span class="text-xs font-semibold text-green-800 bg-green-100 px-2 py-0.5 rounded-full">Verified</span>
+                                    {% else %}
+                                        <span class="text-xs font-semibold text-red-800 bg-red-100 px-2 py-0.5 rounded-full">Unverified</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0 mt-3 sm:mt-0">
+                                {% if not emailaddress.primary %}
+                                <button type="submit" name="action_primary" value="{{ emailaddress.id }}" class="btn btn-outline btn-sm text-xs">Make Primary</button>
+                                {% endif %}
+                                {% if not emailaddress.verified %}
+                                <button type="submit" name="action_send" value="{{ emailaddress.id }}" class="btn btn-secondary btn-sm text-xs">Resend Verification</button>
+                                {% endif %}
+                                <button type="submit" name="action_remove" value="{{ emailaddress.id }}" class="btn btn-danger btn-sm text-xs">Remove</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </form>
+                {% else %}
+                    <p class="text-deep-brown-700">You have not added any email addresses yet.</p>
+                {% endif %}
+            </section>
+
+            <!-- Form Tambah Email Baru -->
+            <section class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                <h2 class="text-2xl font-bold font-poppins text-deep-brown border-b border-deep-brown-200 pb-4 mb-6">Add New Email</h2>
+                <form method="post" action="{% url 'account_email' %}" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert">
+                            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="block text-sm font-bold text-deep-brown mb-2">{{ form.email.label }}</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i data-feather="plus" class="h-5 w-5 text-deep-brown-400"></i></span>
+                            <input type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}"
+                                class="w-full max-w-sm pl-10 pr-4 py-2.5 border-2 border-deep-brown-200 rounded-lg focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition"
+                                placeholder="Enter a new email address">
+                        </div>
+                        {% for error in form.email.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    
+                    <button name="action_add" type="submit" class="btn btn-primary">Add Email</button>
+                </form>
+            </section>
+        </div>
+    </div>
+</main>
+{% endblock body %}

@@ -1,0 +1,71 @@
+# File .gitignore ini akan mengabaikan file dan folder yang tidak perlu
+# atau sensitif dari repositori Git Anda.
+
+# --- Lingkungan Virtual & Dependensi ---
+# Folder yang dibuat oleh virtualenv, venv, atau Poetry
+.venv
+venv/
+env/
+# Direktori cache Poetry
+.poetry/
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- File Proyek Django ---
+# Database lokal (jangan pernah masukkan database ke Git)
+db.sqlite3
+# File media yang diunggah pengguna (avatar, gambar postingan, dll.)
+/media/
+# File statis yang dikumpulkan oleh collectstatic
+/staticfiles/
+# File log
+*.log
+# File konfigurasi lokal yang mungkin berisi data sensitif
+settings.py
+password_admin.txt
+
+# --- File Sensitif (Sangat Penting) ---
+# File environment yang berisi kunci API, password database, dll.
+.env
+.env.*
+*.env
+
+# --- File Konfigurasi Editor & IDE ---
+# Visual Studio Code
+.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Jetbrains (PyCharm, etc.)
+.idea/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# --- File Sistem Operasi ---
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+
+# --- File Lain-lain ---
+# Cache dari pengujian
+.pytest_cache/
+.coverage
+# Build artifacts
+/build/
+/dist/
+*.egg-info/

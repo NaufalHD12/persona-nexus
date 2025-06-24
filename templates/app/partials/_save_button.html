@@ -1,0 +1,30 @@
+{% if post in request.user.saved_posts.all %}
+    {# JIKA SUDAH DISIMPAN: Tampilkan tombol Unsave #}
+    <form hx-post="{% url 'toggle_save' slug=post.slug %}" 
+          hx-target="#save-button-container-{{ post.id }}" 
+          hx-swap="innerHTML" 
+          class="inline">
+        {% csrf_token %}
+        <button type="submit" class="flex items-center gap-2 text-secondary-accent font-semibold">
+            <i data-feather="bookmark" class="w-5 h-5 fill-current"></i> Saved
+        </button>
+    </form>
+{% else %}
+    {# JIKA BELUM DISIMPAN: Tampilkan tombol Save #}
+    <form hx-post="{% url 'toggle_save' slug=post.slug %}" 
+          hx-target="#save-button-container-{{ post.id }}" 
+          hx-swap="innerHTML" 
+          class="inline">
+        {% csrf_token %}
+        <button type="submit" class="flex items-center gap-2 hover:text-primary-accent transition-colors">
+            <i data-feather="bookmark" class="w-5 h-5"></i> Save
+        </button>
+    </form>
+{% endif %}
+
+{# Inisialisasi ulang Feather Icons setiap kali tombol ini ditukar #}
+<script>
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+</script>

@@ -1,0 +1,30 @@
+<div class="bg-white rounded-xl shadow-md overflow-hidden transition-shadow hover:shadow-lg">
+    <div class="p-5">
+        <div class="flex items-start justify-between">
+            <div class="flex-grow">
+                {# Judul Post yang bisa diklik #}
+                <h3 class="text-lg font-bold font-poppins text-deep-brown">
+                    <a href="{% url 'post_detail' slug=post.slug %}" class="hover:shadow-underline transition-colors hover:text-secondary-accent">
+                        {{ post.title }}
+                    </a>
+                </h3>
+                {# Info postingan: kategori dan waktu #}
+                <p class="text-xs text-deep-brown-600 mt-1">
+                    in <span class="font-semibold">{{ post.category.name|default:'Uncategorized' }}</span> • {{ post.created_at|timesince }} ago
+                </p>
+            </div>
+            
+            {# Stats: vote dan komentar #}
+            <div class="flex-shrink-0 flex items-center gap-4 text-sm text-deep-brown-700 ml-4">
+                <span class="flex items-center gap-1.5 font-semibold">
+                    <i data-feather="arrow-up" class="w-4 h-4 text-green-600"></i>
+                    {{ post.vote_score }}
+                </span>
+                <span class="flex items-center gap-1.5 font-semibold">
+                    <i data-feather="message-square" class="w-4 h-4 text-blue-600"></i>
+                    {{ post.comments.count }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>

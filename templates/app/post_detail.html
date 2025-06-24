@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head_title %}- {{ post.title }}{% endblock head_title %}
+
+{% block body %}
+<main class="container mx-auto p-4 md:p-6 lg:p-8">
+    <div class="grid lg:grid-cols-12 gap-8">
+        
+        <!-- Kolom Kiri: Konten Post -->
+        <div class="lg:col-span-8">
+            <article class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="p-5 md:p-8">
+                    <!-- Header Post -->
+                    <div class="mb-4">
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            {% if post.game_title %}
+                            <span class="text-xs font-semibold bg-secondary-accent/20 text-secondary-accent py-1 px-3 rounded-full">{{ post.game_title.title }}</span>
+                            {% endif %}
+                            {% if post.category %}
+                            <span class="text-xs font-semibold bg-gray-200 text-deep-brown-800 py-1 px-3 rounded-full">{{ post.category.name }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex justify-between items-start gap-4">
+                            <h1 class="text-2xl lg:text-3xl font-bold font-poppins text-deep-brown">{{ post.title }}</h1>
+                            
+                            {# Tombol hanya muncul jika pengguna adalah penulis post #}
+                            {% if post.author == request.user %}
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <a href="{% url 'post_update' slug=post.slug %}" class="p-2 rounded-full hover:bg-gray-100" title="Edit Post">
+                                    <i data-feather="edit-2" class="w-5 h-5 text-deep-brown-600"></i>
+                                </a>
+                                <a href="#" 
+                                    hx-get="{% url 'post_delete' slug=post.slug %}"
+                                    hx-target="#modal-container"
+                                    hx-swap="innerHTML"
+                                    class="p-2 rounded-full hover:bg-red-100" title="Delete Post">
+                                        <i data-feather="trash-2" class="w-5 h-5 text-red-600"></i>
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <p class="text-sm text-deep-brown-600 mt-2">
+                            Posted by <a href="{% url 'profile_detail' username=post.author.username %}" class="font-semibold hover:underline">{{ post.author.username }}</a> • {{ post.created_at|timesince }} ago
+                        </p>
+                    </div>
+
+                    <!-- Gambar Sampul -->
+                    {% if post.cover_image and post.cover_image.url %}
+                        <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" class="rounded-lg w-full object-cover my-4">
+                    {% endif %}
+                    
+                    <!-- Konten Lengkap -->
+                    <div class="prose max-w-none font-lato text-deep-brown-800 leading-relaxed">
+                        {{ post.content|linebreaks }}
+                    </div>
+                </div>
+
+                <!-- Aksi & Vote -->
+                <div class="flex items-center justify-between border-t border-deep-brown-200 p-4">
+                    <div class="flex items-center gap-6 text-sm text-deep-brown-700 font-semibold">
+                        <a href="#comments" class="flex items-center gap-2 hover:text-primary-accent"><i data-feather="message-square" class="w-5 h-5"></i> {{ post.comments.count }} Comments</a>
+                        <a href="#" class="flex items-center gap-2 hover:text-primary-accent"><i data-feather="share-2" class="w-5 h-5"></i> Share</a>
+                         <div id="save-button-container-{{ post.id }}">
+                            {% include 'app/partials/_save_button.html' with post=post %}
+                        </div>
+                    </div>
+                    
+                    <div class="vote-section flex items-center gap-2">
+                        <button class="vote-btn p-2 rounded-full transition {% if post.user_vote_value == 1 %}bg-green-200{% else %}hover:bg-green-100{% endif %}"
+                                data-url="{% url 'vote' model_name='post' pk=post.id direction='up' %}">
+                            <i data-feather="arrow-up" class="w-5 h-5 text-green-600"></i>
+                        </button>
+                        
+                        <span class="vote-score font-bold text-lg font-poppins">{{ post.vote_score }}</span>
+                        
+                        <button class="vote-btn p-2 rounded-full transition {% if post.user_vote_value == -1 %}bg-red-200{% else %}hover:bg-red-100{% endif %}
+                                       {% if post.vote_score <= 0 and post.user_vote_value != 1 %}disabled:opacity-50 disabled:cursor-not-allowed{% endif %}"
+                                data-url="{% url 'vote' model_name='post' pk=post.id direction='down' %}"
+                                {% if post.vote_score <= 0 and post.user_vote_value != 1 %}disabled{% endif %}>
+                            <i data-feather="arrow-down" class="w-5 h-5 text-red-600"></i>
+                        </button>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <!-- Kolom Kanan: Komentar -->
+        <aside class="lg:col-span-4" id="comments">
+            <div class="sticky top-24 space-y-6">
+                <!-- Daftar Komentar -->
+                <div class="bg-white rounded-xl shadow-md p-5 space-y-4">
+                    {% for comment in post.comments.all %}
+                        {% if not comment.parent %}
+                            {% include "app/partials/_comment.html" with comment=comment %}
+                        {% endif %}
+                    {% empty %}
+                        <p class="text-sm text-center text-deep-brown-600 py-4">Be the first to comment!</p>
+                    {% endfor %}
+                </div>
+                
+                <!-- Formulir Komentar -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h3 class="font-poppins font-bold text-lg mb-4">Leave a Comment</h3>
+                    <form action="{% url 'add_comment' slug=post.slug %}" method="post">
+                        {% csrf_token %}
+                        {{ comment_form.content }}
+                        {% for error in comment_form.content.errors %}
+                            <p class="text-sm text-red-600 mt-1">{{ error }}</p>
+                        {% endfor %}
+                        <button type="submit" class="w-full btn btn-primary mt-3">Post Comment</button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+    </div>
+</main>
+{% endblock body %}
+
+{% block page_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function getCsrfToken() {
+            return document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+        }
+
+        document.querySelectorAll('.vote-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (this.disabled) return;
+                
+                const url = this.dataset.url;
+                // PERBAIKAN: Simpan referensi ke elemen sebelum fetch
+                const voteSection = this.closest('.vote-section');
+                if (!voteSection) return;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken(),
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Gunakan referensi yang sudah disimpan
+                        const scoreElement = voteSection.querySelector('.vote-score');
+                        const upvoteBtn = voteSection.querySelector('[data-url*="up"]');
+                        const downvoteBtn = voteSection.querySelector('[data-url*="down"]');
+                        
+                        scoreElement.textContent = data.score;
+                        
+                        upvoteBtn.classList.remove('bg-green-200');
+                        downvoteBtn.classList.remove('bg-red-200');
+
+                        if (data.user_vote_status === 'up') {
+                            upvoteBtn.classList.add('bg-green-200');
+                        } else if (data.user_vote_status === 'down') {
+                            downvoteBtn.classList.add('bg-red-200');
+                        }
+                        
+                        if (data.score <= 0 && data.user_vote_status !== 'up') {
+                            downvoteBtn.disabled = true;
+                            downvoteBtn.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                        } else {
+                            downvoteBtn.disabled = false;
+                            downvoteBtn.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+    });
+    </script>
+{% endblock page_js %}

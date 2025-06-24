@@ -1,0 +1,50 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persona Nexus - {% block head_title %}Welcome{% endblock head_title %}</title>
+    
+    <link rel="stylesheet" href="{% static 'output.css'%}">
+
+    <!-- Google Fonts: Poppins & Lato -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Feather Icons for form fields -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    
+    {% block extra_head %}{% endblock extra_head %}
+</head>
+<body class="antialiased">
+
+    {% if messages %}
+    <div class="container mx-auto px-4 pt-4">
+        {% for message in messages %}
+        <div class="p-4 mb-4 text-sm rounded-lg
+            {% if message.tags == 'success' %} bg-green-100 text-green-800 {% endif %}
+            {% if message.tags == 'error' %} bg-red-100 text-red-800 {% endif %}
+            {% if message.tags == 'warning' %} bg-yellow-100 text-yellow-800 {% endif %}
+            {% if message.tags == 'info' %} bg-blue-100 text-blue-800 {% endif %}"
+            role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <main>
+        {% block body %}
+            <!-- Konten dari child template seperti signup.html akan dirender di sini -->
+        {% endblock body %}
+    </main>
+    
+    <script>
+        // Inisialisasi Feather Icons jika digunakan di halaman turunan
+        feather.replace();
+    </script>
+    {% block page_js %}{% endblock page_js %}
+</body>
+</html>

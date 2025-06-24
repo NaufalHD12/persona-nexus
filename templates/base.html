@@ -1,0 +1,204 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persona Nexus {% block head_title %}{% endblock head_title %}</title>
+    <link rel="stylesheet" href="{% static 'output.css'%}">
+
+    <!-- Google Fonts: Poppins & Lato -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Feather Icons for form fields -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <!-- alpine.js -->
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body class="antialiased flex flex-col min-h-screen" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <!-- Header & Navbar -->
+    <header class="sticky top-0 z-30 w-full p-4 bg-soft-cream/90 backdrop-blur-sm border-b border-border-color">
+        <div class="container mx-auto flex items-center justify-between relative h-10">
+            
+            <!-- Bagian Kiri: Logo -->
+            <div class="flex-1 flex justify-start">
+                {# Tambahkan kelas "group" ke tag <a> terluar #}
+                <a href="{% url 'home' %}" class="group flex items-center gap-2">
+                    <svg class="h-8 w-auto text-deep-brown transition-colors group-hover:text-secondary-accent" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><title>Persona Nexus Velvet Key Logo</title><path d="M62.4,36.2c-7.2-7.2-18.9-7.2-26.1,0c-6.8,6.8-7.3,17.7-1.3,25.1l-21.9,21.9c-2.9,2.9-2.9,7.7,0,10.6c2.9,2.9,7.7,2.9,10.6,0l22-22c7.4,6,18.3,5.5,25.1-1.3C78,51.6,78,40.3,72.3,34.5C69.9,32.1,66.3,30.6,62.4,36.2z M48,48c-1.3,1.3-3.5,1.3-4.8,0s-1.3-3.5,0-4.8s3.5-1.3,4.8,0S49.3,46.7,48,48z M50,32.5c-9.7,0-17.5,7.8-17.5,17.5S40.3,67.5,50,67.5S67.5,59.7,67.5,50S59.7,32.5,50,32.5z"/><path d="M50,25C36.2,25,25,36.2,25,50s11.2,25,25,25s25-11.2,25-25S63.8,25,50,25z M50,70c-11,0-20-9-20-20s9-20,20-20s20,9,20,20S61,70,50,70z"/></svg>
+                    <span class="text-2xl font-bold font-poppins text-deep-brown flex-shrink-0 transition-colors group-hover:text-secondary-accent">Persona Nexus</span>
+                </a>
+            </div>
+            
+            <!-- Bagian Tengah: Navigasi Desktop -->
+            <nav class="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-6">
+                <a href="{% url 'home' %}" 
+                    class="font-poppins py-2 px-3 md:px-5 border-b-4 whitespace-nowrap transition-colors
+                    {% if request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'following_feed' %}
+                        border-primary-accent text-deep-brown font-semibold
+                    {% else %}
+                        border-transparent text-deep-brown-600 hover:text-secondary-accent font-semibold
+                    {% endif %}">
+                    Home
+                </a>
+                <a href="{% url 'game_directory' %}"
+                    class="font-poppins py-2 px-3 md:px-5 border-b-4 whitespace-nowrap transition-colors
+                    {% if request.resolver_match.url_name == 'game_directory' %}
+                        border-primary-accent text-deep-brown font-semibold
+                    {% else %}
+                        border-transparent text-deep-brown-600 hover:text-secondary-accent font-semibold
+                    {% endif %}">
+                    Games
+                </a>
+                <a href="{% url 'categories' %}"
+                    class="font-poppins py-2 px-3 md:px-5 border-b-4 whitespace-nowrap transition-colors
+                    {% if request.resolver_match.url_name == 'categories' %}
+                        border-primary-accent text-deep-brown font-semibold
+                    {% else %}
+                        border-transparent text-deep-brown-600 hover:text-secondary-accent font-semibold
+                    {% endif %}">
+                    Categories
+                </a>
+            </nav>
+
+            <!-- Bagian Kanan: Menu Pengguna (DIPERBARUI DENGAN ALPINE.JS) -->
+            <div class="flex-1 flex justify-end">
+                <div class="flex items-center gap-3">
+                    <a href="{% url 'create_post' %}" title="Create Post" class="btn btn-primary !p-2 !rounded-full">
+                        <i data-feather="plus" class="h-6 w-6"></i>
+                    </a>
+                    
+                    <!-- Dropdown Container -->
+                    <div x-data="{ open: false }" class="relative mt-2">
+                        <!-- Tombol Avatar Toggle -->
+                        <button @click="open = !open">
+                            {% if request.user.avatar and request.user.avatar.url %}
+                                <img src="{{ request.user.avatar.url }}" alt="User Avatar" class="w-10 h-10 rounded-full border-2 border-primary-accent object-cover">
+                            {% else %}
+                                <img src="{% static 'images/avatars/default.png' %}" alt="Default Avatar" class="w-10 h-10 rounded-full border-2 border-primary-accent object-cover">
+                            {% endif %}
+                        </button>
+                        
+                        <!-- Menu Dropdown -->
+                        <div x-show="open" 
+                            @click.away="open = false"
+                            x-transition:enter="transition ease-out duration-100"
+                            x-transition:enter-start="transform opacity-0 scale-95"
+                            x-transition:enter-end="transform opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-75"
+                            x-transition:leave-start="transform opacity-100 scale-100"
+                            x-transition:leave-end="transform opacity-0 scale-95"
+                            class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20"
+                            style="display: none;">
+                            
+                            <a href="{% url 'profile_detail' username=request.user.username %}" class="flex items-center gap-3 px-4 py-2 text-sm text-deep-brown-700 hover:bg-gray-100">
+                                <i data-feather="user" class="w-4 h-4"></i> My Profile
+                            </a>
+                            <a href="{% url 'account_settings' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-deep-brown-700 hover:bg-gray-100">
+                                <i data-feather="settings" class="w-4 h-4"></i> Settings
+                            </a>
+                            <div class="border-t border-deep-brown-200 my-1"></div>
+                            <button @click="$dispatch('open-logout-modal')" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                <i data-feather="log-out" class="w-4 h-4"></i> Logout
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Menu Mobile -->
+                    <button id="mobile-menu-button" class="md:hidden p-2">
+                        <i data-feather="menu" class="h-6 w-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {# Menu Mobile (tersembunyi secara default) #}
+        <div id="mobile-menu" class="hidden md:hidden container mx-auto mt-4">
+            <nav class="flex flex-col gap-4 p-4 bg-white/80 rounded-lg shadow-md">
+                <a href="#" class="font-semibold text-deep-brown/80">Home</a>
+                <a href="#" class="font-semibold text-deep-brown/80">Games</a>
+                <a href="#" class="font-semibold text-deep-brown/80">Categories</a>
+            </nav>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="container mx-auto px-4 pt-4">
+        {% for message in messages %}
+        <div class="p-4 mb-4 text-sm rounded-lg
+            {% if message.tags == 'success' %} bg-green-100 text-green-800 {% endif %}
+            {% if message.tags == 'error' %} bg-red-100 text-red-800 {% endif %}
+            {% if message.tags == 'warning' %} bg-yellow-100 text-yellow-800 {% endif %}
+            {% if message.tags == 'info' %} bg-blue-100 text-blue-800 {% endif %}"
+            role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# Konten Utama Halaman #}
+    <main class="flex-grow">
+        {% block body %}
+            {# Konten dari child template akan dirender di sini #}
+        {% endblock body %}
+    </main>
+
+    <footer class="bg-white/50 mt-auto">
+        <div class="container mx-auto py-6 px-4 text-center text-deep-brown/60">
+            <p>&copy; {% now "Y" %} Persona Nexus. All rights reserved.</p>
+        </div>
+    </footer>
+    
+    <div x-data="{ logoutModal: false }"
+        @open-logout-modal.window="logoutModal = true"
+        x-show="logoutModal"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        
+        <div @click.away="logoutModal = false"
+            x-show="logoutModal"
+            x-transition
+            class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 md:p-12 text-center">
+            
+            <h2 class="text-3xl font-bold font-poppins text-deep-brown">Sign Out</h2>
+            <p class="text-deep-brown-700 mt-4">Are you sure you want to sign out?</p>
+            
+            <form method="post" action="{% url 'account_logout' %}" class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {% csrf_token %}
+                <button type="button" @click="logoutModal = false" class="w-full btn btn-outline">Cancel</button>
+                <button type="submit" class="w-full btn btn-danger">Yes, Sign Out</button>
+            </form>
+        </div>
+    </div>
+    <div id="modal-container"></div>
+    {# Inisialisasi Feather Icons #}
+    <script>
+        feather.replace();
+
+        // Script untuk toggle menu mobile
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+    </script>
+
+    <script>
+        function initFeatherIcons() { if (typeof feather !== 'undefined') { feather.replace(); } }
+        document.addEventListener('DOMContentLoaded', initFeatherIcons);
+    </script>
+
+    {# Blok untuk JavaScript spesifik per halaman #}
+    {% block page_js %}
+    {% endblock page_js %}
+</body>
+</html>

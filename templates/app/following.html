@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head_title %}- Following Feed{% endblock %}
+
+{% block body %}
+<!-- Main Content -->
+<main class="container mx-auto p-4 md:p-6 lg:p-8 grid lg:grid-cols-12 gap-8">
+    
+    <!-- Main Feed -->
+    <div class="lg:col-span-8">
+        <!-- Feed Tabs -->
+        <div class="flex border-b-2 border-deep-brown-200 mb-6">
+            <a href="{% url 'home' %}" class="font-poppins py-2 px-4 text-deep-brown-600 hover:text-secondary-accent transition">Recommended</a>
+            <a href="{% url 'following_feed' %}" class="font-poppins py-2 px-4 border-b-4 border-primary-accent text-deep-brown font-semibold">Following</a>
+        </div>
+
+        <!-- Search and Filter Section (MENGGUNAKAN HTMX & ALPINE.JS) -->
+        <div x-data="{ sort: 'new' }" class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+            <!-- Filter Buttons -->
+            <div class="flex-shrink-0 flex items-center gap-2 p-1 bg-gray-200/50 rounded-full">
+                <button @click="sort = 'new'" :class="{ 'bg-white shadow text-secondary-accent': sort === 'new' }"
+                        class="flex items-center gap-2 px-3 py-1 rounded-full font-semibold"
+                        hx-get="{% url 'following_feed' %}?sort=new" hx-target="#post-list-container" hx-trigger="click" hx-swap="innerHTML">
+                    <i data-feather="sun" class="h-4 w-4"></i> <span>New</span>
+                </button>
+                <button @click="sort = 'hot'" :class="{ 'bg-white shadow text-secondary-accent': sort === 'hot' }"
+                        class="flex items-center gap-2 px-3 py-1 rounded-full font-semibold"
+                        hx-get="{% url 'following_feed' %}?sort=hot" hx-target="#post-list-container" hx-trigger="click" hx-swap="innerHTML">
+                    <i data-feather="trending-up" class="h-4 w-4"></i> <span>Hot</span>
+                </button>
+                <button @click="sort = 'top'" :class="{ 'bg-white shadow text-secondary-accent': sort === 'top' }"
+                        class="flex items-center gap-2 px-3 py-1 rounded-full font-semibold"
+                        hx-get="{% url 'following_feed' %}?sort=top" hx-target="#post-list-container" hx-trigger="click" hx-swap="innerHTML">
+                    <i data-feather="bar-chart-2" class="h-4 w-4"></i> <span>Top</span>
+                </button>
+            </div>
+            <!-- Search Form -->
+            <form hx-get="{% url 'following_feed' %}" hx-target="#post-list-container" hx-trigger="keyup changed delay:500ms, search" hx-swap="innerHTML" class="w-full sm:w-auto">
+                <input type="hidden" name="sort" :value="sort">
+                <div class="relative">
+                    <input type="search" name="q" placeholder="Search in this feed..." class="w-full sm:w-64 pl-4 pr-10 py-2 border-2 border-deep-brown-200 rounded-full">
+                </div>
+            </form>
+        </div>
+
+        <!-- Wadah untuk Daftar Postingan yang diperbarui oleh HTMX -->
+        <div id="post-list-container" class="space-y-6">
+            {% include "app/partials/_post_list.html" %}
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="hidden lg:block lg:col-span-4">
+        {% include 'app/partials/_sidebar.html' %}
+    </aside>
+</main>
+{% endblock body %}
+
+{% block page_js %}
+<script>
+// Buat fungsi global agar bisa dipanggil dari hx-on
+window.initVoteButtons = function() {
+    console.log('Initializing vote buttons...');
+    
+    // PENTING: Inisialisasi Feather icons terlebih dahulu
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+        console.log('Feather icons replaced');
+    }
+    
+    // Hapus event listener lama
+    document.querySelectorAll('.vote-btn').forEach(button => {
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+    });
+
+    const voteButtons = document.querySelectorAll('.vote-btn');
+    console.log(`Found ${voteButtons.length} vote buttons`);
+
+    voteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (this.disabled) return;
+            
+            const url = this.dataset.url;
+            const postCard = this.closest('.post-card');
+            if (!postCard) return;
+            
+            const voteSection = postCard.querySelector('.vote-section');
+            const csrfToken = document.body.getAttribute('hx-headers')?.match(/'X-CSRFToken': '([^']+)'/)?.[1] || 
+                            document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+            console.log('Voting:', url);
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 
+                    'X-CSRFToken': csrfToken, 
+                    'Content-Type': 'application/json' 
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Vote response:', data);
+                
+                if (data.success) {
+                    const scoreElement = voteSection.querySelector('.vote-score');
+                    const upvoteBtn = voteSection.querySelector('[data-url*="up"]');
+                    const downvoteBtn = voteSection.querySelector('[data-url*="down"]');
+                    
+                    scoreElement.textContent = data.score;
+                    
+                    upvoteBtn.classList.remove('bg-green-200');
+                    downvoteBtn.classList.remove('bg-red-200');
+                    
+                    if (data.user_vote_status === 'up') {
+                        upvoteBtn.classList.add('bg-green-200');
+                    } else if (data.user_vote_status === 'down') {
+                        downvoteBtn.classList.add('bg-red-200');
+                    }
+                    
+                    const isDisabled = data.score <= 0 && data.user_vote_status !== 'down';
+                    downvoteBtn.disabled = isDisabled;
+
+                    if (isDisabled) {
+                        downvoteBtn.classList.add('disabled:opacity-50');
+                    } else {
+                        downvoteBtn.classList.remove('disabled:opacity-50');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Vote error:', error);
+            });
+        });
+    });
+};
+
+// Inisialisasi saat halaman dimuat
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing...');
+    initVoteButtons();
+});
+
+// Handler untuk HTMX events
+document.addEventListener('htmx:afterSwap', function(event) {
+    console.log('HTMX afterSwap triggered');
+    
+    if (event.target.id === 'post-list-container' || event.target.closest('#post-list-container')) {
+        console.log('Post list updated, reinitializing...');
+        // Delay sedikit untuk memastikan DOM sudah stabil
+        setTimeout(function() {
+            initVoteButtons();
+        }, 50);
+    }
+});
+
+// Backup handler
+document.addEventListener('htmx:afterSettle', function(event) {
+    if (event.target.id === 'post-list-container' || event.target.closest('#post-list-container')) {
+        console.log('HTMX settled, reinitializing...');
+        setTimeout(function() {
+            initVoteButtons();
+        }, 100);
+    }
+});
+</script>
+{% endblock page_js %}

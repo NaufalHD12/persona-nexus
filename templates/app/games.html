@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head_title %}Game Directory{% endblock head_title %}
+
+{% block body %}
+<main class="container mx-auto p-4 md:p-6 lg:p-8">
+    
+    <div class="max-w-6xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold font-poppins text-deep-brown">Game Directory</h1>
+            <p class="text-lg text-deep-brown-700 mt-2">Browse All Persona Games – From Classic to Spin-Offs.</p>
+        </header>
+
+        <!-- Game Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
+            
+            {% for game in games %}
+            <a href="#" class="block bg-white rounded-xl shadow-md overflow-hidden transition transform hover:-translate-y-1 hover:shadow-xl">
+                {# Bagian Gambar Kartu #}
+                <div class="h-40 bg-gray-200 flex items-center justify-center">
+                    {% if game.game_logo and game.game_logo.url %}
+                        <img src="{{ game.game_logo.url }}" class="h-full w-full object-cover" alt="{{ game.title }} Logo">
+                    {% else %}
+                        {# Placeholder jika tidak ada logo #}
+                        <i data-feather="image" class="h-12 w-12 text-gray-400"></i>
+                    {% endif %}
+                </div>
+                
+                {# Bagian Teks Kartu #}
+                <div class="p-5">
+                    <h2 class="text-xl font-bold font-poppins truncate">{{ game.title }}</h2>
+                    <p class="text-sm text-deep-brown-600 mt-1 h-10 overflow-hidden">
+                        {{ game.description|default:"No description available." }}
+                    </p>
+                </div>
+            </a>
+            {% empty %}
+                <div class="col-span-full bg-white rounded-xl shadow-md p-8 text-center">
+                    <h3 class="text-xl font-poppins font-bold">No Games Found</h3>
+                    <p class="text-deep-brown-700 mt-2">Check back later for more game categories.</p>
+                </div>
+            {% endfor %}
+
+        </div>
+    </div>
+
+</main>
+{% endblock body %}
