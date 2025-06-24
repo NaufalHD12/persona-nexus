@@ -1,4 +1,4 @@
-# 🎮 Persona Nexus - Persona-Themed Community Forum
+# 🎮 Persona Nexus - Persona Series Community Forum
 
 **Persona Nexus** is a full-stack web forum application built from scratch, inspired by the pop-retro aesthetic of the *Persona 4* game. The platform serves as a space for fans to discuss, share content, and interact within a dynamic and modern community.
 
