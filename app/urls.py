@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import PostListView, VoteView, GameListView, CategoryListView, PostDetailView, AddCommentView, SettingsView, PostCreateView, ProfileDetailView, FollowToggleView,  FollowingPostListView, SavePostToggleView, PostUpdateView, PostDeleteView, SuccessModalView
+from .views import PostListView, VoteView, GameListView, CategoryListView, PostDetailView, AddCommentView, SettingsView, PostCreateView, ProfileDetailView, FollowToggleView,  FollowingPostListView, SavePostToggleView, PostUpdateView, PostDeleteView, SuccessModalView, StartConversationView, InboxView, SendMessageView
 
 urlpatterns = [
     path('post/create/', PostCreateView.as_view(), name='create_post'),
@@ -17,4 +17,8 @@ urlpatterns = [
     path('profile/<str:username>/', ProfileDetailView.as_view(), name='profile_detail'),
     path('profile/<str:username>/toggle_follow/', FollowToggleView.as_view(), name="toggle_follow"),
     path('success-modal/', SuccessModalView.as_view(), name='success_modal'),
+    path('messages/', InboxView.as_view(), name='message_inbox'),
+    path('messages/<int:pk>/', InboxView.as_view(), name='conversation_detail'),
+    path('messages/start/<str:username>/', StartConversationView.as_view(), name='start_conversation'),
+    path('messages/<int:pk>/send/', SendMessageView.as_view(), name='send_message'),
 ]

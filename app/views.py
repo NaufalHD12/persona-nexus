@@ -3,14 +3,15 @@ from django.http import JsonResponse, HttpResponse
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.contenttypes.models import ContentType
-from .models import Post, Game, Vote, PostCategory, Comment, UserProfile
+from .models import Post, Game, Vote, PostCategory, Comment, UserProfile, Conversation, Message
 from django.views.generic import CreateView, ListView, UpdateView, DeleteView, DetailView, TemplateView
 from django.db.models.query import QuerySet
 from django.db.models import OuterRef, Subquery, Count, Q, Sum
-from .forms import CommentForm, PostForm
+from .forms import CommentForm, PostForm, MessageForm
 from django.urls import reverse_lazy
 from friendship.models import Follow
 from django.contrib import messages
+from django import forms
 
 
 class PostListView(LoginRequiredMixin, ListView):
@@ -352,3 +353,71 @@ class SuccessModalView(LoginRequiredMixin, TemplateView):
         context['message'] = self.request.GET.get('message', 'Your action was successful.')
         return context
 
+
+class InboxView(LoginRequiredMixin, TemplateView):
+    """
+    Satu-satunya view yang menangani seluruh halaman pesan.
+    """
+    template_name = 'app/inbox.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Selalu sediakan daftar percakapan untuk sidebar kiri
+        context['conversations'] = self.request.user.conversations.all().order_by('-updated_at')
+        
+        # Jika ada 'pk' di URL, berarti kita ingin menampilkan percakapan spesifik
+        if 'pk' in kwargs:
+            conversation = get_object_or_404(
+                Conversation, 
+                pk=kwargs['pk'], 
+                participants=self.request.user
+            )
+            context['conversation'] = conversation
+            context['message_form'] = MessageForm()
+        
+        return context
+
+class StartConversationView(LoginRequiredMixin, View):
+    """
+    Mencari atau membuat percakapan baru, lalu mengarahkan ke inbox.
+    """
+    def get(self, request, username):
+        target_user = get_object_or_404(UserProfile, username=username)
+        if target_user == request.user:
+            return redirect('message_inbox')
+
+        conversation = Conversation.objects.annotate(
+            p_count=Count('participants')
+        ).filter(
+            p_count=2,
+            participants=request.user
+        ).filter(
+            participants=target_user
+        ).first()
+
+        if not conversation:
+            conversation = Conversation.objects.create()
+            conversation.participants.add(request.user, target_user)
+        
+        return redirect('conversation_detail', pk=conversation.pk)
+
+class SendMessageView(LoginRequiredMixin, View):
+    """
+    View kecil ini HANYA untuk menangani pengiriman pesan (POST).
+    """
+    def post(self, request, pk):
+        conversation = get_object_or_404(Conversation, pk=pk, participants=request.user)
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            # ==> PERBAIKAN: Ambil data dari form dan buat objek secara manual <==
+            content = form.cleaned_data['content']
+            message = Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                content=content
+            )
+            conversation.save() # Update timestamp
+            
+            # Kembalikan hanya gelembung pesan baru untuk HTMX
+            return render(request, 'app/partials/_message_bubble.html', {'message': message})
+        return HttpResponse(status=400)

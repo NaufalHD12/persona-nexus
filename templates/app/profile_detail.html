@@ -34,19 +34,25 @@
                     </div>
                 </div>
 
-                <!-- Tombol Aksi Dinamis -->
                 <div class="mt-6">
-                    {% if profile_user == request.user %}
-                        <a href="{% url 'account_settings' %}" class="w-full btn btn-primary">Edit Profile</a>
-                    {% else %}
-                        <form action="{% url 'toggle_follow' username=profile_user.username %}" method="post">
-                            {% csrf_token %}
-                            {% if is_following %}
-                                <button type="submit" class="w-full btn btn-outline">Unfollow</button>
-                            {% else %}
-                                <button type="submit" class="w-full btn btn-secondary">Follow</button>
-                            {% endif %}
-                        </form>
+                    {% if profile_user != request.user %}
+                        {# Bungkus kedua tombol dengan div flex ini #}
+                        <div class="flex items-center gap-4">
+                            
+                            {# Tombol Follow/Unfollow #}
+                            <form action="{% url 'toggle_follow' username=profile_user.username %}" method="post" class="flex-1">
+                                {% csrf_token %}
+                                {% if is_following %}
+                                    <button type="submit" class="w-full btn btn-outline">Unfollow</button>
+                                {% else %}
+                                    <button type="submit" class="w-full btn btn-secondary">Follow</button>
+                                {% endif %}
+                            </form>
+
+                            {# Tombol Message #}
+                            <a href="{% url 'start_conversation' username=profile_user.username %}" class="btn btn-primary flex-1">Message</a>
+                        
+                        </div>
                     {% endif %}
                 </div>
             </div>

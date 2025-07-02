@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head_title %}Direct Messages{% endblock %}
+
+{% block body %}
+<!-- Container utama dengan padding konsisten seperti halaman lain -->
+<div class="container mx-auto px-4 py-6 flex-grow">
+    <!-- Wrapper untuk chat dengan tinggi yang disesuaikan -->
+    <div class="h-[calc(100vh-200px)] flex bg-white rounded-lg shadow-sm border border-deep-brown-200/50 overflow-hidden">
+
+        <!-- Kolom Kiri: Daftar Percakapan -->
+        <aside class="w-full md:w-1/3 lg:w-1/4 h-full border-r border-deep-brown-200 flex-col md:flex hidden">
+            <div class="p-4 border-b border-deep-brown-200 flex-shrink-0 bg-white">
+                <h1 class="text-xl font-bold font-poppins text-deep-brown">Messages</h1>
+            </div>
+            <div class="flex-grow overflow-y-auto bg-white">
+                {% include 'app/partials/_conversation_list.html' %}
+            </div>
+        </aside>
+
+        <!-- Kolom Kanan: Jendela Obrolan -->
+        <main id="chat-window" class="flex-grow h-full flex flex-col bg-soft-cream">
+            {% if conversation %}
+                {% include 'app/partials/_chat_window.html' %}
+            {% else %}
+                <div class="flex-grow flex items-center justify-center">
+                    <div class="text-center text-deep-brown-600">
+                        <i data-feather="message-square" class="w-16 h-16 mx-auto mb-4 text-deep-brown-400"></i>
+                        <p class="font-semibold text-lg font-poppins text-deep-brown">Select a conversation to start chatting</p>
+                        <p class="text-sm text-deep-brown-600 mt-2">Choose a conversation from the sidebar to begin messaging</p>
+                    </div>
+                </div>
+            {% endif %}
+        </main>
+
+    </div>
+</div>
+
+<!-- Mobile: Overlay untuk daftar percakapan -->
+<div id="mobile-conversations" class="md:hidden fixed inset-0 z-40 bg-black/50 hidden">
+    <div class="bg-white h-full w-4/5 max-w-sm">
+        <div class="p-4 border-b border-deep-brown-200 flex items-center justify-between">
+            <h1 class="text-xl font-bold font-poppins text-deep-brown">Messages</h1>
+            <button id="close-mobile-conversations" class="p-2 text-deep-brown-600 hover:text-deep-brown">
+                <i data-feather="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div class="overflow-y-auto h-[calc(100%-80px)]">
+            {% include 'app/partials/_conversation_list.html' %}
+        </div>
+    </div>
+</div>
+
+<!-- Mobile: Button untuk membuka daftar percakapan (hanya tampil saat ada conversation) -->
+{% if conversation %}
+<button id="show-mobile-conversations" class="md:hidden fixed top-20 left-4 z-30 bg-white rounded-full p-3 shadow-lg border border-deep-brown-200">
+    <i data-feather="message-square" class="w-5 h-5 text-deep-brown"></i>
+</button>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const showBtn = document.getElementById('show-mobile-conversations');
+    const closeBtn = document.getElementById('close-mobile-conversations');
+    const overlay = document.getElementById('mobile-conversations');
+
+    if (showBtn) {
+        showBtn.addEventListener('click', function() {
+            overlay.classList.remove('hidden');
+        });
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+        });
+    }
+
+    // Close on backdrop click
+    if (overlay) {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                overlay.classList.add('hidden');
+            }
+        });
+    }
+});
+</script>
+{% endblock body %}

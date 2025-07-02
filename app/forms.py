@@ -53,3 +53,13 @@ class PostForm(forms.ModelForm):
                 'class': 'text-sm text-deep-brown-700'
             })
         }
+
+
+class MessageForm(forms.Form):
+    content = forms.CharField(
+        label='', # Hilangkan label jika tidak perlu
+        widget=forms.TextInput(attrs={
+            'class': 'flex-grow border rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-accent',
+            'placeholder': 'Type a message...'
+        })
+    )

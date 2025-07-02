@@ -1,0 +1,25 @@
+{% load static %}
+
+<div class="flex {% if message.sender == request.user %}justify-end{% else %}justify-start{% endif %} mb-4">
+    <div class="flex items-end gap-2 max-w-xs lg:max-w-md {% if message.sender == request.user %}flex-row-reverse{% endif %}">
+        
+        <!-- Avatar -->
+        <div class="flex-shrink-0">
+            {% if message.sender.avatar and message.sender.avatar.url %}
+                <img src="{{ message.sender.avatar.url }}" alt="{{ message.sender.username }}" class="w-8 h-8 rounded-full object-cover">
+            {% else %}
+                <img src="{% static 'images/avatars/default.png' %}" alt="{{ message.sender.username }}" class="w-8 h-8 rounded-full object-cover">
+            {% endif %}
+        </div>
+        
+        <!-- Message Bubble -->
+        <div class="flex flex-col {% if message.sender == request.user %}items-end{% else %}items-start{% endif %}">
+            <div class="px-4 py-2 rounded-2xl {% if message.sender == request.user %}bg-deep-brown text-white rounded-br-md{% else %}bg-white text-deep-brown border border-deep-brown-200/50 rounded-bl-md{% endif %} shadow-sm">
+                <p class="text-sm break-words">{{ message.content }}</p>
+            </div>
+            <div class="text-xs text-deep-brown-400 mt-1 px-2">
+                {{ message.created_at|date:"M d, H:i" }}
+            </div>
+        </div>
+    </div>
+</div>

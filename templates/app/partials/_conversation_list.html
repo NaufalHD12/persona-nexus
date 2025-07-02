@@ -1,0 +1,62 @@
+{% load static %}
+{% load humanize %}
+
+<div id="conversation-list">
+    {% for conv in conversations %}
+    <a href="{% url 'conversation_detail' pk=conv.pk %}"
+       class="flex items-center gap-4 p-4 border-b border-deep-brown-200/30 hover:bg-soft-cream/50 transition-colors duration-200
+              {% if conversation and conversation.pk == conv.pk %}bg-primary-accent/10 border-l-4 border-l-primary-accent{% else %}border-l-4 border-l-transparent{% endif %}">
+        
+        <div class="flex-shrink-0 relative">
+            {% for user in conv.participants.all %}{% if user != request.user %}
+                {% if user.avatar and user.avatar.url %}
+                    <img src="{{ user.avatar.url }}" alt="{{ user.username }}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm">
+                {% else %}
+                    <img src="{% static 'images/avatars/default.png' %}" alt="{{ user.username }}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm">
+                {% endif %}
+            {% endif %}{% endfor %}
+        </div>
+        
+        <div class="flex-grow overflow-hidden">
+            {% for user in conv.participants.all %}{% if user != request.user %}
+                <p class="font-semibold text-deep-brown truncate font-poppins">{{ user.username }}</p>
+            {% endif %}{% endfor %}
+            {% if conv.messages.last %}
+                <p class="text-sm text-deep-brown-600 truncate mt-1">
+                    {% if conv.messages.last.sender == request.user %}
+                        <span class="text-deep-brown-500">You: </span>
+                    {% endif %}
+                    {{ conv.messages.last.content|truncatechars:50 }}
+                </p>
+            {% else %}
+                <p class="text-sm text-deep-brown-400 italic mt-1">No messages yet</p>
+            {% endif %}
+        </div>
+        
+        <div class="flex flex-col items-end flex-shrink-0">
+            <div class="text-xs text-deep-brown-400">
+                {% if conv.messages.last %}
+                    {# PERBAIKAN: Gunakan 'timestamp' bukan 'created_at' untuk pesan #}
+                    {{ conv.messages.last.timestamp|naturaltime }}
+                {% else %}
+                    {{ conv.updated_at|naturaltime }}
+                {% endif %}
+            </div>
+            {% comment %}
+            <!-- Uncomment this if you have unread message functionality -->
+            {% if conv.unread_count > 0 %}
+                <div class="bg-primary-accent text-white text-xs rounded-full w-5 h-5 flex items-center justify-center mt-1">
+                    {{ conv.unread_count }}
+                </div>
+            {% endif %}
+            {% endcomment %}
+        </div>
+    </a>
+    {% empty %}
+    <div class="p-6 text-center">
+        <i data-feather="message-circle" class="w-12 h-12 mx-auto text-deep-brown-300 mb-3"></i>
+        <p class="text-deep-brown-500 font-poppins">You have no conversations yet</p>
+        <p class="text-sm text-deep-brown-400 mt-1">Start a conversation to see it here</p>
+    </div>
+    {% endfor %}
+</div>

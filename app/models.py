@@ -188,3 +188,38 @@ class Comment(models.Model):
     
     def __str__(self):
         return f'Comment by {self.author.username} on {self.post.title}'
+    
+
+class Conversation(models.Model):
+    """Mewakili satu sesi percakapan antara dua pengguna."""
+    participants = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, 
+        related_name="conversations"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+class Message(models.Model):
+    """Mewakili satu pesan di dalam sebuah percakapan."""
+    # Field ini harus ada dan bernama 'conversation'
+    conversation = models.ForeignKey(
+        Conversation, 
+        on_delete=models.CASCADE, 
+        related_name="messages"
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name="sent_messages"
+    )
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"Message from {self.sender.username} at {self.timestamp}"
