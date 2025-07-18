@@ -402,22 +402,52 @@ class StartConversationView(LoginRequiredMixin, View):
         return redirect('conversation_detail', pk=conversation.pk)
 
 class SendMessageView(LoginRequiredMixin, View):
-    """
-    View kecil ini HANYA untuk menangani pengiriman pesan (POST).
-    """
     def post(self, request, pk):
         conversation = get_object_or_404(Conversation, pk=pk, participants=request.user)
         form = MessageForm(request.POST)
         if form.is_valid():
-            # ==> PERBAIKAN: Ambil data dari form dan buat objek secara manual <==
             content = form.cleaned_data['content']
-            message = Message.objects.create(
+            new_message = Message.objects.create(
                 conversation=conversation,
                 sender=request.user,
                 content=content
             )
-            conversation.save() # Update timestamp
+            conversation.save()
             
-            # Kembalikan hanya gelembung pesan baru untuk HTMX
-            return render(request, 'app/partials/_message_bubble.html', {'message': message})
+            context = {
+                'message': new_message,
+                'conversation': conversation,
+                'message_form': MessageForm()  # Kirim form baru dalam response
+            }
+            return render(request, 'app/partials/_send_message_response.html', context)
+        
         return HttpResponse(status=400)
+    
+
+class PollNewMessagesView(LoginRequiredMixin, View):
+    """
+    View ini akan dipanggil setiap beberapa detik oleh HTMX. Ia hanya akan mengembalikan pesan yang lebih baru dari ID pesan terakhir yang diketahui.
+    """
+    def get(self, request, pk):
+        last_message_id = request.GET.get('last_message_id', 0)
+        
+        conversation = get_object_or_404(
+            Conversation, 
+            pk=pk, 
+            participants=request.user
+        )
+        
+        new_messages = conversation.messages.filter(
+            id__gt=last_message_id
+        ).order_by('timestamp')
+        
+        # Tentukan ID pesan terakhir yang baru untuk polling selanjutnya
+        new_last_id = new_messages.last().id if new_messages else last_message_id
+        
+        context = {
+            'messages': new_messages,
+            'conversation': conversation,
+            'new_last_message_id': new_last_id
+        }
+        
+        return render(request, 'app/partials/_message_list_updates.html', context)

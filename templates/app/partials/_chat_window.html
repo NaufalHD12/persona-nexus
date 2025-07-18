@@ -23,27 +23,63 @@
 </div>
 
 <!-- Daftar Pesan -->
-<div id="message-list" class="flex-grow p-4 space-y-4 overflow-y-auto bg-soft-cream/30" 
+<div id="message-list" 
+     class="flex-grow p-6 space-y-4 overflow-y-auto" 
      x-data 
-     x-init="$el.scrollTop = $el.scrollHeight">
+     x-init="$el.scrollTop = $el.scrollHeight"
+     hx-on::after-swap="$el.scrollTop = $el.scrollHeight">
     {% for message in conversation.messages.all %}
         {% include 'app/partials/_message_bubble.html' with message=message %}
     {% endfor %}
+
+    {# Div polling awal #}
+    <div id="polling-div" 
+         hx-get="{% url 'poll_new_messages' pk=conversation.pk %}?last_message_id={{ conversation.messages.last.id|default:0 }}"
+         hx-trigger="every 2s"
+         hx-swap="outerHTML"
+         hx-target="#polling-div">
+    </div>
 </div>
 
 <!-- Formulir Kirim Pesan -->
-<div class="p-4 bg-white border-t border-deep-brown-200/50 flex-shrink-0">
-    <form hx-post="{% url 'send_message' pk=conversation.pk %}" 
-          hx-target="#message-list" 
-          hx-swap="beforeend" 
-          hx-on::after-request="this.reset(); setTimeout(() => { const messageList = document.getElementById('message-list'); messageList.scrollTop = messageList.scrollHeight; }, 50);"
-          class="flex gap-3 items-end">
-        {% csrf_token %}
-        <div class="flex-grow">
+<div class="p-4 bg-white border-t border-deep-brown-200">
+    <div id="message-form-container">
+        <form hx-post="{% url 'send_message' pk=conversation.pk %}" 
+              hx-on::after-request="this.reset();"
+              class="flex gap-3 items-center">
+            {% csrf_token %}
             {{ message_form.content }}
-        </div>
-        <button type="submit" class="btn btn-primary !rounded-full !p-3 flex-shrink-0">
-            <i data-feather="send" class="w-5 h-5"></i>
-        </button>
-    </form>
+            <button type="submit" class="btn btn-primary !rounded-full !p-3">
+                <i data-feather="send" class="w-6 h-6"></i>
+            </button>
+        </form>
+    </div>
 </div>
+
+<script>
+    (function() {
+        const messageList = document.getElementById('message-list');
+        
+        // Fungsi untuk scroll ke bawah
+        const scrollToBottom = () => {
+            messageList.scrollTop = messageList.scrollHeight;
+        };
+
+        // Buat MutationObserver untuk mendeteksi saat anak-anak baru (pesan baru) ditambahkan
+        const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                if (mutation.type === 'childList') {
+                    scrollToBottom();
+                }
+            }
+        });
+
+        // Mulai mengamati perubahan pada message-list
+        observer.observe(messageList, { childList: true });
+
+        // Pastikan untuk memutuskan observer saat elemen tidak lagi di DOM (opsional, praktik baik)
+        htmx.on(messageList, 'htmx:beforeCleanup', () => {
+            observer.disconnect();
+        });
+    })();
+</script>

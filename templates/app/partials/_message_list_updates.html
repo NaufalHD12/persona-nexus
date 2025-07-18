@@ -1,0 +1,10 @@
+{% for message in messages %}
+    {% include 'app/partials/_message_bubble.html' with message=message %}
+{% endfor %}
+
+<div id="polling-div"
+     hx-get="{% url 'poll_new_messages' pk=conversation.pk %}?last_message_id={{ new_last_message_id }}"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     hx-target="#polling-div">
+</div>

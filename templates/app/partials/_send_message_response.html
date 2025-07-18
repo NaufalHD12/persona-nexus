@@ -1,0 +1,26 @@
+{# Pesan baru #}
+<div id="message-list" hx-swap-oob="beforeend">
+    {% include 'app/partials/_message_bubble.html' with message=message %}
+</div>
+
+{# Form baru #}
+<div id="message-form-container" hx-swap-oob="outerHTML">
+    <form hx-post="{% url 'send_message' pk=conversation.pk %}" 
+          hx-on::after-request="this.reset();"
+          class="flex gap-3 items-center">
+        {% csrf_token %}
+        {{ message_form.content }}
+        <button type="submit" class="btn btn-primary !rounded-full !p-3">
+            <i data-feather="send" class="w-6 h-6"></i>
+        </button>
+    </form>
+</div>
+
+{# Update polling div #}
+<div id="polling-div"
+     hx-get="{% url 'poll_new_messages' pk=conversation.pk %}?last_message_id={{ message.id }}"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     hx-target="#polling-div"
+     hx-swap-oob="outerHTML">
+</div>
