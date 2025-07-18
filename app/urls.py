@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import PostListView, VoteView, GameListView, CategoryListView, PostDetailView, AddCommentView, SettingsView, PostCreateView, ProfileDetailView, FollowToggleView,  FollowingPostListView, SavePostToggleView, PostUpdateView, PostDeleteView, SuccessModalView, StartConversationView, InboxView, SendMessageView, PollNewMessagesView
+from .views import PostListView, VoteView, GameListView, CategoryListView, PostDetailView, AddCommentView, SettingsView, PostCreateView, ProfileDetailView, FollowToggleView,  FollowingPostListView, SavePostToggleView, PostUpdateView, PostDeleteView, SuccessModalView, StartConversationView, InboxView, SendMessageView, PollNewMessagesView, UnreadCountView
 
 urlpatterns = [
     path('post/create/', PostCreateView.as_view(), name='create_post'),
@@ -21,5 +21,6 @@ urlpatterns = [
     path('messages/<int:pk>/', InboxView.as_view(), name='conversation_detail'),
     path('messages/start/<str:username>/', StartConversationView.as_view(), name='start_conversation'),
     path('messages/<int:pk>/send/', SendMessageView.as_view(), name='send_message'),
-    path('messages/<int:pk>/poll/', PollNewMessagesView.as_view(), name='poll_new_messages')
+    path('messages/<int:pk>/poll/', PollNewMessagesView.as_view(), name='poll_new_messages'),
+    path('notifications/unread_count/', UnreadCountView.as_view(), name='unread_count'),
 ]

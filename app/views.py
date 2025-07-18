@@ -374,6 +374,9 @@ class InboxView(LoginRequiredMixin, TemplateView):
             )
             context['conversation'] = conversation
             context['message_form'] = MessageForm()
+            
+            # Tandai semua pesan di percakapan ini yang bukan milik kita sebagai "telah dibaca"
+            conversation.messages.exclude(sender=self.request.user).update(is_read=True)
         
         return context
 
@@ -451,3 +454,21 @@ class PollNewMessagesView(LoginRequiredMixin, View):
         }
         
         return render(request, 'app/partials/_message_list_updates.html', context)
+    
+
+class UnreadCountView(LoginRequiredMixin, View):
+    """
+    View ini hanya akan menghitung dan merender badge notifikasi.
+    Akan dipanggil oleh HTMX setiap beberapa detik.
+    """
+    def get(self, request):
+        # Logika ini sama dengan yang ada di context processor Anda
+        count = Message.objects.filter(
+            conversation__participants=request.user, 
+            is_read=False
+        ).exclude(
+            sender=request.user
+        ).count()
+        
+        # Render hanya potongan HTML untuk badge notifikasi
+        return render(request, 'app/partials/_notification_badge.html', {'unread_message_count': count})

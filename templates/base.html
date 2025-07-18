@@ -68,13 +68,22 @@
                     Categories
                 </a>
                 <a href="{% url 'message_inbox' %}"
-                   class="font-poppins py-2 px-3 md:px-5 border-b-4 whitespace-nowrap transition-colors
+                   class="relative font-poppins py-2 px-3 md:px-5 border-b-4 whitespace-nowrap transition-colors
                    {% if request.resolver_match.url_name == 'message_inbox' or request.resolver_match.url_name == 'conversation_detail' %}
                        border-primary-accent text-deep-brown font-semibold
                    {% else %}
                        border-transparent text-deep-brown-600 hover:text-secondary-accent font-semibold
                    {% endif %}">
-                    Messages
+                   Messages
+                   
+                   {# Wadah ini akan melakukan polling untuk notifikasi baru #}
+                   <div id="notification-badge-container"
+                        hx-get="{% url 'unread_count' %}"
+                        hx-trigger="every 3s"
+                        hx-swap="innerHTML">
+                       {# Tampilkan status awal dari context processor #}
+                       {% include 'app/partials/_notification_badge.html' %}
+                   </div>
                 </a>
             </nav>
 
