@@ -1,0 +1,33 @@
+<div class="p-3 font-bold border-b">Notifications</div>
+<div class="py-1 max-h-96 overflow-y-auto">
+    {% for notification in latest_notifications %}
+    <a href="{% url 'mark_as_read_and_redirect' notification_pk=notification.pk %}" 
+       class="flex items-center gap-3 px-4 py-3 text-sm text-deep-brown-700 hover:bg-gray-100 whitespace-normal break-words">
+        
+        <!-- Teks Notifikasi -->
+        <div class="flex-grow">
+            {{ notification.actor.username }} {{ notification.verb }}
+            {% if notification.action_object %}
+                "{{ notification.action_object.title|truncatechars:20 }}"
+            {% endif %}
+            <span class="block text-xs text-gray-400 mt-1">
+                {{ notification.timestamp|timesince }} ago
+            </span>
+        </div>
+
+        <!-- Tanda Belum Dibaca -->
+        {% if not notification.is_read %}
+        <div class="flex-shrink-0">
+            <span class="w-3 h-3 bg-primary-accent rounded-full block" title="Unread"></span>
+        </div>
+        {% endif %}
+    </a>
+    {% empty %}
+    <p class="px-4 py-3 text-sm text-gray-500">No new notifications.</p>
+    {% endfor %}
+</div>
+<div class="border-t">
+    <a href="{% url 'notification_list' %}" class="block text-center py-2 text-sm font-semibold text-secondary-accent hover:bg-gray-100">
+        View All Notifications
+    </a>
+</div>

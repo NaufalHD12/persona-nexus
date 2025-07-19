@@ -1,7 +1,6 @@
-{# Template ini hanya berisi titik notifikasi #}
-{% if unread_message_count > 0 %}
-<span class="absolute top-1 right-0 flex h-3 w-3">
-    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-    <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+{# Template ini sekarang menampilkan jumlah notifikasi #}
+{% if unread_notification_count > 0 %}
+<span class="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 bg-red-500 text-white text-xs rounded-full">
+    {{ unread_notification_count }}
 </span>
 {% endif %}

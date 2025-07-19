@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.contenttypes.models import ContentType
-from .models import Post, Game, Vote, PostCategory, Comment, UserProfile, Conversation, Message
+from .models import Notification, Post, Game, Vote, PostCategory, Comment, UserProfile, Conversation, Message
 from django.views.generic import CreateView, ListView, UpdateView, DeleteView, DetailView, TemplateView
 from django.db.models.query import QuerySet
 from django.db.models import OuterRef, Subquery, Count, Q, Sum
@@ -471,4 +471,105 @@ class UnreadCountView(LoginRequiredMixin, View):
         ).count()
         
         # Render hanya potongan HTML untuk badge notifikasi
-        return render(request, 'app/partials/_notification_badge.html', {'unread_message_count': count})
+        return render(request, 'app/partials/_dm_badge.html', {'unread_message_count': count})
+
+
+# views.py
+class NotificationUpdateView(LoginRequiredMixin, View):
+    """
+    Mengembalikan potongan HTML untuk badge, popup, dan pemicu polling baru.
+    """
+    def get(self, request):
+        last_notification_id = request.GET.get('last_notification_id', 0)
+        
+        new_notifications = Notification.objects.filter(
+            recipient=request.user,
+            id__gt=last_notification_id
+        ).order_by('id')
+
+        unread_count = request.user.notifications.filter(is_read=False).count()
+        
+        # Tentukan ID notifikasi terakhir yang baru untuk polling selanjutnya
+        new_last_id = new_notifications.last().id if new_notifications else last_notification_id
+        
+        context = {
+            'unread_notification_count': unread_count,
+            'new_notifications': new_notifications,
+            'new_last_id': new_last_id
+        }
+        
+        return render(request, 'app/partials/_notification_updates.html', context)
+    
+
+class NotificationListView(LoginRequiredMixin, ListView):
+    """
+    Menampilkan semua notifikasi untuk pengguna yang sedang login,
+    dengan paginasi.
+    """
+    model = Notification
+    template_name = 'app/notification_list.html'
+    context_object_name = 'notifications'
+    paginate_by = 15
+
+    def get_queryset(self):
+        # Ambil semua notifikasi untuk pengguna yang sedang login
+        return self.request.user.notifications.all()
+
+
+class MarkNotificationsAsReadView(LoginRequiredMixin, View):
+    """
+    View ini akan dipicu oleh HTMX saat ikon lonceng diklik.
+    Ia akan menandai semua notifikasi yang belum dibaca sebagai "telah dibaca".
+    """
+    def post(self, request):
+        # Tandai semua notifikasi yang belum dibaca milik pengguna sebagai "telah dibaca"
+        request.user.notifications.filter(is_read=False).update(is_read=True)
+        
+        # Kirim kembali potongan HTML untuk badge (yang sekarang akan kosong)
+        # Pastikan Anda memiliki file _notification_badge.html
+        return render(request, 'app/partials/_notification_badge.html', {'unread_notification_count': 0})
+
+
+class MarkAsReadAndRedirectView(LoginRequiredMixin, View):
+    """
+    Menandai satu notifikasi sebagai telah dibaca, lalu mengarahkan
+    pengguna ke URL target dari notifikasi tersebut.
+    """
+    def get(self, request, notification_pk):
+        # Dapatkan notifikasi, pastikan itu milik pengguna yang login
+        notification = get_object_or_404(
+            Notification, 
+            pk=notification_pk, 
+            recipient=request.user
+        )
+        
+        # Tandai sebagai telah dibaca jika belum
+        if not notification.is_read:
+            notification.is_read = True
+            notification.save()
+        
+        # Dapatkan URL tujuan dari metode di model
+        target_url = notification.get_absolute_url()
+        
+        # Fallback jika tidak ada URL target
+        if not target_url or target_url == "#":
+            return redirect('notification_list')
+            
+        return redirect(target_url)
+    
+
+class LoadNotificationDropdownView(LoginRequiredMixin, View):
+    """
+    View ini hanya akan mengambil notifikasi terbaru untuk ditampilkan
+    di dalam dropdown, tanpa mengubah status is_read.
+    """
+    def get(self, request):
+        # Ambil 5 notifikasi terbaru untuk pengguna yang login
+        latest_notifications = request.user.notifications.all()[:5]
+        
+        # Render hanya potongan HTML yang berisi konten dropdown
+        return render(
+            request, 
+            'app/partials/_notification_dropdown_content.html', 
+            {'latest_notifications': latest_notifications}
+        )

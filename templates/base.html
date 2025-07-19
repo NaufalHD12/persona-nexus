@@ -21,6 +21,24 @@
 
     <style>
         [x-cloak] { display: none !important; }
+    
+        .notification-dropdown {
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 24rem;
+            right: 0;
+            top: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .notification-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .notification-dropdown::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
     </style>
     <script src="https://unpkg.com/htmx.org@2.0.4" xintegrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 </head>
@@ -76,13 +94,12 @@
                    {% endif %}">
                    Messages
                    
-                   {# Wadah ini akan melakukan polling untuk notifikasi baru #}
-                   <div id="notification-badge-container"
+                   <div id="dm-badge-container"
                         hx-get="{% url 'unread_count' %}"
                         hx-trigger="every 3s"
                         hx-swap="innerHTML">
                        {# Tampilkan status awal dari context processor #}
-                       {% include 'app/partials/_notification_badge.html' %}
+                       {% include 'app/partials/_dm_badge.html' %}
                    </div>
                 </a>
             </nav>
@@ -94,6 +111,33 @@
                         <i data-feather="plus" class="h-6 w-6"></i>
                     </a>
                     
+                    <!-- Dropdown Notifikasi -->
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open"
+                                {# 1. Memicu HTMX saat diklik untuk memuat konten #}
+                                hx-get="{% url 'load_notification_dropdown' %}"
+                                hx-target="#notification-dropdown-content"
+                                hx-trigger="click"
+                                class="relative p-2 rounded-full hover:bg-gray-200/50 focus:outline-none">
+                            <i data-feather="bell" class="w-6 h-6 text-deep-brown"></i>
+                            <div id="notification-badge-container">
+                                {% include 'app/partials/_notification_badge.html' %}
+                            </div>
+                        </button>
+                        
+                        <div x-show="open" @click.away="open = false" x-cloak
+                             class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg z-20">
+                            {# 2. Wadah ini sekarang akan diisi secara dinamis oleh HTMX #}
+                            <div id="notification-dropdown-content">
+                                {# Placeholder saat dropdown belum dimuat #}
+                                <div class="p-4 text-center text-sm text-gray-500">
+                                    <i data-feather="loader" class="animate-spin mx-auto"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dropdown Avatar -->
                     <div x-data="{ open: false }" class="relative">
                         <button @click="open = !open" class="focus:outline-none">
                             {% if request.user.avatar and request.user.avatar.url %}
@@ -103,11 +147,8 @@
                             {% endif %}
                         </button>
                         
-                        <div x-show="open" 
-                             @click.away="open = false"
-                             x-transition
-                             class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20"
-                             x-cloak>
+                        <div x-show="open" @click.away="open = false" x-transition x-cloak
+                             class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20">
                             <a href="{% url 'profile_detail' username=request.user.username %}" class="flex items-center gap-3 px-4 py-2 text-sm text-deep-brown-700 hover:bg-gray-100">
                                 <i data-feather="user" class="w-4 h-4"></i> My Profile
                             </a>
@@ -121,19 +162,12 @@
                         </div>
                     </div>
 
+                    <!-- Tombol Menu Mobile -->
                     <button id="mobile-menu-button" class="md:hidden p-2">
                         <i data-feather="menu" class="h-6 w-6"></i>
                     </button>
                 </div>
             </div>
-        </div>
-
-        <div id="mobile-menu" class="hidden md:hidden container mx-auto mt-4">
-            <nav class="flex flex-col gap-4 p-4 bg-white/80 rounded-lg shadow-md">
-                <a href="#" class="font-semibold text-deep-brown/80">Home</a>
-                <a href="#" class="font-semibold text-deep-brown/80">Games</a>
-                <a href="#" class="font-semibold text-deep-brown/80">Categories</a>
-            </nav>
         </div>
     </header>
 
@@ -152,15 +186,10 @@
     </div>
     {% endif %}
 
-    <!-- Konten Utama Halaman -->
-    <!-- `flex-grow` akan membuat main memanjang, `flex flex-col` memungkinkan konten di dalamnya juga menggunakan flexbox -->
     <main class="flex-grow flex flex-col">
-        {% block body %}
-            <!-- Konten dari child template akan dirender di sini dan akan mengisi ruang yang tersedia -->
-        {% endblock body %}
+        {% block body %}{% endblock body %}
     </main>
 
-    <!-- Footer tidak lagi memerlukan `mt-auto` karena `flex-grow` pada `main` sudah menanganinya -->
     <footer class="bg-white/50">
         <div class="container mx-auto py-6 px-4 text-center text-deep-brown/60">
             <p>&copy; {% now "Y" %} Persona Nexus. All rights reserved.</p>
@@ -168,20 +197,12 @@
     </footer>
     
     <!-- Modal Logout -->
-    <div x-data="{ logoutModal: false }"
-         @open-logout-modal.window="logoutModal = true"
-         x-show="logoutModal"
-         x-cloak
+    <div x-data="{ logoutModal: false }" @open-logout-modal.window="logoutModal = true" x-show="logoutModal" x-cloak
          class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-        
-        <div @click.away="logoutModal = false"
-             x-show="logoutModal"
-             x-transition
+        <div @click.away="logoutModal = false" x-show="logoutModal" x-transition
              class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 md:p-12 text-center">
-            
             <h2 class="text-3xl font-bold font-poppins text-deep-brown">Sign Out</h2>
             <p class="text-deep-brown-700 mt-4">Are you sure you want to sign out?</p>
-            
             <form method="post" action="{% url 'account_logout' %}" class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {% csrf_token %}
                 <button type="button" @click="logoutModal = false" class="w-full btn btn-outline">Cancel</button>
@@ -191,24 +212,40 @@
     </div>
     <div id="modal-container"></div>
     
-    <script>
-        // Inisialisasi awal Feather Icons
-        feather.replace();
+    <!-- Wadah untuk popup toast notifikasi -->
+    <div id="toast-container" class="fixed top-20 right-4 z-50 space-y-2 max-w-full w-96"></div>
 
-        // Script untuk toggle menu mobile
+    <!-- Pemicu Polling HTMX (Tak Terlihat) -->
+    <div id="notification-poll-trigger"
+         hx-get="{% url 'notification_update' %}?last_notification_id={{ latest_notifications.first.id|default:0 }}"
+         hx-trigger="every 3s"
+         hx-swap="none">
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Untuk menutup notifikasi tertentu
+            window.dispatchNotificationClose = function(notificationId) {
+                window.dispatchEvent(new CustomEvent(`notification-${notificationId}`));
+            };
+            
+            // Atur ulang feather icons
+            if (window.feather) {
+                feather.replace();
+            }
+        });
+        feather.replace();
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const mobileMenu = document.getElementById('mobile-menu');
-        mobileMenuButton.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
-        });
-
-        // Inisialisasi ulang Feather Icons setelah konten baru dimuat oleh HTMX
+        if (mobileMenuButton) {
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
         document.body.addEventListener('htmx:afterSwap', function(event) {
             feather.replace();
         });
     </script>
-
-    {% block page_js %}
-    {% endblock page_js %}
+    {% block page_js %}{% endblock page_js %}
 </body>
 </html>

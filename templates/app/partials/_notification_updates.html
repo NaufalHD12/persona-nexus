@@ -1,0 +1,20 @@
+{# Template ini berisi beberapa potongan HTML dengan instruksi OOB #}
+
+{# 1. Perbarui badge notifikasi #}
+<div id="notification-badge-container" hx-swap-oob="innerHTML">
+    {% include 'app/partials/_notification_badge.html' %}
+</div>
+
+{# 2. Tampilkan popup toast untuk setiap notifikasi baru #}
+{% for notification in new_notifications %}
+<div id="toast-container" hx-swap-oob="beforeend">
+    {% include 'app/partials/_notification_toast.html' with notification=notification %}
+</div>
+{% endfor %}
+
+{# 3. Ganti pemicu polling dengan yang baru yang memiliki last_id terupdate #}
+<div id="notification-poll-trigger" hx-swap-oob="outerHTML"
+     hx-get="{% url 'notification_update' %}?last_notification_id={{ new_last_id }}"
+     hx-trigger="every 10s"
+     hx-swap="none">
+</div>

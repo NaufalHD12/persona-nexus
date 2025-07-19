@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import PostListView, VoteView, GameListView, CategoryListView, PostDetailView, AddCommentView, SettingsView, PostCreateView, ProfileDetailView, FollowToggleView,  FollowingPostListView, SavePostToggleView, PostUpdateView, PostDeleteView, SuccessModalView, StartConversationView, InboxView, SendMessageView, PollNewMessagesView, UnreadCountView
+from .views import LoadNotificationDropdownView, MarkAsReadAndRedirectView, MarkNotificationsAsReadView, NotificationListView, NotificationUpdateView, PostListView, VoteView, GameListView, CategoryListView, PostDetailView, AddCommentView, SettingsView, PostCreateView, ProfileDetailView, FollowToggleView,  FollowingPostListView, SavePostToggleView, PostUpdateView, PostDeleteView, SuccessModalView, StartConversationView, InboxView, SendMessageView, PollNewMessagesView, UnreadCountView
 
 urlpatterns = [
     path('post/create/', PostCreateView.as_view(), name='create_post'),
@@ -23,4 +23,8 @@ urlpatterns = [
     path('messages/<int:pk>/send/', SendMessageView.as_view(), name='send_message'),
     path('messages/<int:pk>/poll/', PollNewMessagesView.as_view(), name='poll_new_messages'),
     path('notifications/unread_count/', UnreadCountView.as_view(), name='unread_count'),
+    path('notifications/', NotificationListView.as_view(), name='notification_list'),
+    path('notifications/<int:notification_pk>/read/', MarkAsReadAndRedirectView.as_view(), name='mark_as_read_and_redirect'),
+    path('notifications/update/', NotificationUpdateView.as_view(), name='notification_update'),
+    path('notifications/load-dropdown/', LoadNotificationDropdownView.as_view(), name='load_notification_dropdown'),
 ]

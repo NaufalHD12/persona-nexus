@@ -224,3 +224,54 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender.username} at {self.timestamp}"
+    
+
+class Notification(models.Model):
+    """
+    Model generik untuk menangani semua jenis notifikasi di situs.
+    """
+    # Tipe notifikasi untuk mempermudah filtering dan rendering
+    class NotificationType(models.TextChoices):
+        NEW_MESSAGE = 'message', 'New Message'
+        POST_VOTE = 'vote', 'Post Vote'
+        NEW_COMMENT = 'comment', 'New Comment'
+        NEW_REPLY = 'reply', 'New Reply'
+        NEW_FOLLOWER = 'follower', 'New Follower'
+        POST_SAVE = 'save', 'Post Save'
+
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="actions")
+    verb = models.CharField(max_length=255)
+    notification_type = models.CharField(max_length=20, choices=NotificationType.choices)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True, blank=True)
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    action_object = GenericForeignKey('content_type', 'object_id')
+    is_read = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.actor} {self.verb} {self.action_object or ''}"
+
+    # ==> TAMBAHKAN METODE INI <==
+    def get_absolute_url(self):
+        """
+        Membuat URL yang benar berdasarkan tipe notifikasi.
+        """
+        # Jika notifikasi berhubungan dengan sebuah Post
+        if self.notification_type in [
+            self.NotificationType.POST_VOTE, 
+            self.NotificationType.NEW_COMMENT, 
+            self.NotificationType.NEW_REPLY, 
+            self.NotificationType.POST_SAVE
+        ] and self.action_object:
+            return reverse('post_detail', kwargs={'slug': self.action_object.slug})
+        
+        # Jika notifikasi adalah tentang follower baru
+        elif self.notification_type == self.NotificationType.NEW_FOLLOWER and self.actor:
+            return reverse('profile_detail', kwargs={'username': self.actor.username})
+        
+        # Fallback jika tidak ada URL spesifik (misalnya, ke halaman notifikasi utama)
+        return reverse('notification_list')
