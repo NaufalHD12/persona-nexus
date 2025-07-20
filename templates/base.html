@@ -170,6 +170,23 @@
             </div>
         </div>
     </header>
+    <!-- Mobile Menu Dropdown -->
+    <div id="mobile-menu" class="hidden md:hidden bg-white shadow-lg border-t border-gray-200">
+        <div class="container mx-auto px-4 py-3 flex flex-col space-y-3">
+            <a href="{% url 'home' %}" class="font-poppins py-2 px-3 border-b-2 border-transparent hover:border-primary-accent text-deep-brown font-semibold">
+                Home
+            </a>
+            <a href="{% url 'game_directory' %}" class="font-poppins py-2 px-3 border-b-2 border-transparent hover:border-primary-accent text-deep-brown font-semibold">
+                Games
+            </a>
+            <a href="{% url 'categories' %}" class="font-poppins py-2 px-3 border-b-2 border-transparent hover:border-primary-accent text-deep-brown font-semibold">
+                Categories
+            </a>
+            <a href="{% url 'message_inbox' %}" class="font-poppins py-2 px-3 border-b-2 border-transparent hover:border-primary-accent text-deep-brown font-semibold">
+                Messages
+            </a>
+        </div>
+    </div>
 
     {% if messages %}
     <div class="container mx-auto px-4 pt-4">
@@ -242,6 +259,105 @@
                 mobileMenu.classList.toggle('hidden');
             });
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- Logika Suara Notifikasi ---
+
+            let audioContext;
+            // Inisialisasi AudioContext setelah interaksi pengguna pertama
+            function initAudioContext() {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            // Fungsi untuk membuat dan memainkan suara
+            function playSound(frequency, type, duration) {
+                if (!audioContext) return;
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.type = type;
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Volume rendah
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+            }
+
+            // Fungsi yang akan dipanggil untuk memainkan suara notifikasi
+            function playNotificationSound() {
+                initAudioContext();
+                playSound(880.0, 'sine', 0.3); // Nada lebih tinggi untuk notifikasi
+            }
+
+            // Fungsi yang akan dipanggil untuk memainkan suara pesan
+            function playMessageSound() {
+                initAudioContext();
+                playSound(523.25, 'triangle', 0.2); // Nada C5 untuk pesan
+            }
+            
+            // Event listener untuk mengaktifkan AudioContext saat pengguna berinteraksi
+            document.body.addEventListener('click', initAudioContext, { once: true });
+            document.body.addEventListener('keydown', initAudioContext, { once: true });
+
+
+            // --- Logika Pemicu Suara ---
+
+            // 1. Pemicu untuk Notifikasi Umum (Toast)
+            const toastContainer = document.getElementById('toast-container');
+            if (toastContainer) {
+                const toastObserver = new MutationObserver((mutationsList) => {
+                    for (const mutation of mutationsList) {
+                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                            if (mutation.addedNodes[0].nodeType === Node.ELEMENT_NODE) {
+                                console.log('New notification toast detected. Playing sound.');
+                                playNotificationSound();
+                            }
+                        }
+                    }
+                });
+                toastObserver.observe(toastContainer, { childList: true });
+            }
+
+            // 2. Pemicu untuk Pesan Baru (Logika yang Diperbaiki)
+            const messageObserver = new MutationObserver((mutationsList) => {
+                for (const mutation of mutationsList) {
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        const newNode = mutation.addedNodes[0];
+                        // Pastikan itu adalah elemen dan bukan pesan dari pengguna saat ini (ditandai dengan 'justify-start')
+                        if (newNode.nodeType === Node.ELEMENT_NODE && newNode.classList.contains('justify-start')) {
+                            console.log('New incoming message detected. Playing sound.');
+                            playMessageSound();
+                        }
+                    }
+                }
+            });
+
+            // Fungsi untuk mencari dan mengamati daftar pesan
+            function setupMessageObserver() {
+                const messageList = document.getElementById('message-list');
+                // Jika daftar pesan ada dan belum diamati
+                if (messageList && !messageList.hasAttribute('data-sound-observed')) {
+                    messageObserver.observe(messageList, { childList: true });
+                    messageList.setAttribute('data-sound-observed', 'true'); // Tandai agar tidak di-observe lagi
+                    console.log('Message sound observer attached.');
+                }
+            }
+
+            // Jalankan saat halaman pertama kali dimuat
+            setupMessageObserver();
+
+            // Jalankan kembali setiap kali HTMX selesai menukar konten
+            document.body.addEventListener('htmx:afterSwap', setupMessageObserver);
+        });
+
+        // Inisialisasi ulang Feather Icons setelah HTMX menukar konten
         document.body.addEventListener('htmx:afterSwap', function(event) {
             feather.replace();
         });
