@@ -25,9 +25,8 @@ class PostListView(LoginRequiredMixin, ListView):
         return ["app/home.html"]
 
     def get_queryset(self):
-        # ==> PERBAIKAN 1: Anotasi skor vote di awal <==
         queryset = super().get_queryset().annotate(
-            score=Sum('votes__value', default=0) # Hitung skor dan beri nama 'score'
+            score=Sum('votes__value', default=0)
         )
 
         sort_by = self.request.GET.get('sort', 'new')
@@ -36,7 +35,6 @@ class PostListView(LoginRequiredMixin, ListView):
         if query:
             queryset = queryset.filter(Q(title__icontains=query) | Q(content__icontains=query))
 
-        # ==> PERBAIKAN 2: Gunakan 'score' untuk mengurutkan, bukan 'vote_score' <==
         if sort_by == 'hot':
             queryset = queryset.order_by('-score', '-created_at')
         elif sort_by == 'top':
@@ -52,7 +50,8 @@ class PostListView(LoginRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['featured_games'] = Game.objects.all()[:3]
+        # === PERUBAHAN: Ambil 9 game secara acak untuk rotasi ===
+        context['featured_games'] = Game.objects.order_by('?')[:9]
         context['popular_categories'] = PostCategory.objects.annotate(num_posts=Count('posts')).order_by('-num_posts')[:4]
         return context
 
@@ -64,9 +63,6 @@ class FollowingPostListView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     def get_template_names(self):
-        """
-        Mengembalikan template parsial jika request berasal dari HTMX.
-        """
         if self.request.htmx:
             return ["app/partials/_post_list.html"]
         return ["app/following.html"]
@@ -99,11 +95,9 @@ class FollowingPostListView(LoginRequiredMixin, ListView):
         return queryset
 
     def get_context_data(self, **kwargs):
-        """
-        Menyediakan context untuk sidebar.
-        """
         context = super().get_context_data(**kwargs)
-        context['featured_games'] = Game.objects.all()[:3]
+        # === PERUBAHAN: Ambil 9 game secara acak untuk rotasi ===
+        context['featured_games'] = Game.objects.order_by('?')[:9]
         context['popular_categories'] = PostCategory.objects.annotate(
             num_posts=Count('posts')
         ).order_by('-num_posts')[:4]
@@ -205,7 +199,107 @@ class GameListView(ListView):
     model = Game
     context_object_name = 'games'
     
+# === VIEW BARU ===
+class GameDetailView(LoginRequiredMixin, ListView):
+    model = Post
+    context_object_name = "posts"
+    paginate_by = 10
+    template_name = 'app/game_detail.html'
+
+    def get_template_names(self):
+        if self.request.htmx:
+            return ["app/partials/_post_list.html"]
+        return [self.template_name]
+
+    def get_queryset(self):
+        # Ambil game berdasarkan slug dari URL
+        self.game = get_object_or_404(Game, slug=self.kwargs['slug'])
+        
+        # Filter postingan hanya untuk game ini
+        queryset = Post.objects.filter(game_title=self.game).annotate(
+            score=Sum('votes__value', default=0)
+        )
+
+        sort_by = self.request.GET.get('sort', 'new')
+        query = self.request.GET.get('q')
+
+        if query:
+            queryset = queryset.filter(Q(title__icontains=query) | Q(content__icontains=query))
+
+        if sort_by == 'hot':
+            queryset = queryset.order_by('-score', '-created_at')
+        elif sort_by == 'top':
+            queryset = queryset.order_by('-score')
+        else:
+            queryset = queryset.order_by('-created_at')
+
+        if self.request.user.is_authenticated:
+            user_vote = Vote.objects.filter(
+                user=self.request.user, 
+                object_id=OuterRef('pk'), 
+                content_type__model='post'
+            ).values('value')
+            queryset = queryset.annotate(user_vote_value=Subquery(user_vote[:1]))
+        
+        return queryset
     
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Kirim objek game ke template
+        context['game'] = self.game
+        return context
+
+
+class CategoryDetailView(LoginRequiredMixin, ListView):
+    model = Post
+    context_object_name = "posts"
+    paginate_by = 10
+    template_name = 'app/category_detail.html'
+
+    def get_template_names(self):
+        if self.request.htmx:
+            return ["app/partials/_post_list.html"]
+        return [self.template_name]
+
+    def get_queryset(self):
+        # Ambil kategori berdasarkan slug dari URL
+        self.category = get_object_or_404(PostCategory, slug=self.kwargs['slug'])
+        
+        # Filter postingan hanya untuk kategori ini
+        queryset = Post.objects.filter(category=self.category).annotate(
+            score=Sum('votes__value', default=0)
+        )
+
+        sort_by = self.request.GET.get('sort', 'new')
+        query = self.request.GET.get('q')
+
+        if query:
+            queryset = queryset.filter(Q(title__icontains=query) | Q(content__icontains=query))
+
+        if sort_by == 'hot':
+            queryset = queryset.order_by('-score', '-created_at')
+        elif sort_by == 'top':
+            queryset = queryset.order_by('-score')
+        else:
+            queryset = queryset.order_by('-created_at')
+
+        if self.request.user.is_authenticated:
+            user_vote = Vote.objects.filter(
+                user=self.request.user, 
+                object_id=OuterRef('pk'), 
+                content_type__model='post'
+            ).values('value')
+            queryset = queryset.annotate(user_vote_value=Subquery(user_vote[:1]))
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Kirim objek kategori ke template
+        context['category'] = self.category
+        return context
+    
+
 class CategoryListView(ListView):
     template_name = 'app/categories.html'
     model = PostCategory

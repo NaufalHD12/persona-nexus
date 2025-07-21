@@ -16,7 +16,7 @@
         <div class="space-y-4">
             
             {% for category in categories %}
-            <a href="#" class="group flex items-center bg-white rounded-lg shadow-sm p-5 w-full transition-all duration-200 ease-in-out border-l-4 border-transparent hover:border-primary-accent hover:shadow-lg hover:transform hover:-translate-y-1">
+            <a href="{% url 'category_detail' slug=category.slug %}" class="group flex items-center bg-white rounded-lg shadow-sm p-5 w-full transition-all duration-200 ease-in-out border-l-4 border-transparent hover:border-primary-accent hover:shadow-lg hover:transform hover:-translate-y-1">
                 <div class="flex-shrink-0 mr-5">
                     <div class="w-12 h-12 rounded-lg bg-primary-accent/10 flex items-center justify-center transition-colors group-hover:bg-primary-accent/20">
                         <i data-feather="{{ category.get_icon }}" class="w-7 h-7 text-primary-accent"></i>
@@ -33,12 +33,10 @@
             {% empty %}
             <div class="bg-white rounded-xl shadow-md p-8 text-center">
                 <h3 class="text-xl font-poppins font-bold">No Categories Found</h3>
-                <p class="text-deep-brown-700 mt-2">The admin has not created any categories yet.</p>
+                <p class="text-deep-brown-700 mt-2">The administrator has not created any categories yet.</p>
             </div>
             {% endfor %}
-
         </div>
     </div>
-
 </main>
 {% endblock body %}

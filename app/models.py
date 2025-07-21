@@ -11,6 +11,8 @@ from django.utils.text import slugify
 class PostCategory(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, default="")
+    # === FIELD BARU DITAMBAHKAN ===
+    slug = models.SlugField(max_length=100, unique=True, blank=True)
     
     def __str__(self):
         return self.name
@@ -28,6 +30,15 @@ class PostCategory(models.Model):
             'General Discussion': 'message-square'
         }
         return icon_map.get(self.name, 'tag')
+
+    # === METODE SAVE DITAMBAHKAN ===
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('category_detail', kwargs={'slug': self.slug})
     
 
 class Game(models.Model):
@@ -164,7 +175,6 @@ class UserProfile(AbstractUser):
             return self.avatar.url
         # Sebaiknya gunakan static untuk default image, tapi ini juga bisa
         return f"{settings.STATIC_URL}images/avatars/default.png"
-
 
 
 class Comment(models.Model):

@@ -16,23 +16,19 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
             
             {% for game in games %}
-            <a href="#" class="block bg-white rounded-xl shadow-md overflow-hidden transition transform hover:-translate-y-1 hover:shadow-xl">
-                {# Bagian Gambar Kartu #}
-                <div class="h-40 bg-gray-200 flex items-center justify-center">
-                    {% if game.game_logo and game.game_logo.url %}
-                        <img src="{{ game.game_logo.url }}" class="h-full w-full object-cover" alt="{{ game.title }} Logo">
-                    {% else %}
-                        {# Placeholder jika tidak ada logo #}
-                        <i data-feather="image" class="h-12 w-12 text-gray-400"></i>
-                    {% endif %}
+            <a href="{% url 'game_detail' slug=game.slug %}"
+                class="group bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-shadow">
+                <div class="relative">
+                    <img src="{% if game.game_logo %}{{ game.game_logo.url }}{% else %}{% static 'images/game-placeholder.png' %}{% endif %}"
+                        alt="{{ game.title }} logo" class="w-full h-40 object-cover">
+                    <div
+                        class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span class="text-white font-bold">View Community</span>
+                    </div>
                 </div>
-                
-                {# Bagian Teks Kartu #}
-                <div class="p-5">
-                    <h2 class="text-xl font-bold font-poppins truncate">{{ game.title }}</h2>
-                    <p class="text-sm text-deep-brown-600 mt-1 h-10 overflow-hidden">
-                        {{ game.description|default:"No description available." }}
-                    </p>
+                <div class="p-4">
+                    <h2 class="text-lg font-semibold text-deep-brown-800 truncate">{{ game.title }}</h2>
+                    <p class="text-sm text-gray-500 mt-1">{{ game.posts.count }} posts</p>
                 </div>
             </a>
             {% empty %}
