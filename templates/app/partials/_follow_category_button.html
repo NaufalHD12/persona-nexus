@@ -1,0 +1,15 @@
+{% if is_following %}
+<form hx-post="{% url 'toggle_follow_category' slug=category.slug %}" hx-target="this" hx-swap="outerHTML">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-outline flex items-center justify-center">
+        <i data-feather="check" class="w-4 h-4 mr-1"></i> Following
+    </button>
+</form>
+{% else %}
+<form hx-post="{% url 'toggle_follow_category' slug=category.slug %}" hx-target="this" hx-swap="outerHTML">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary flex items-center justify-center">
+        <i data-feather="plus" class="w-4 h-4 mr-1"></i> Follow
+    </button>
+</form>
+{% endif %}

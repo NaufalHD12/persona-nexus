@@ -8,15 +8,21 @@
     <div class="max-w-4xl mx-auto">
         <!-- Category Header -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                <div class="flex-shrink-0">
-                    <div class="w-24 h-24 rounded-lg bg-primary-accent/10 flex items-center justify-center border-2 border-gray-200">
-                        <i data-feather="{{ category.get_icon }}" class="w-12 h-12 text-primary-accent"></i>
+            <div class="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-6">
+                <div class="flex items-center space-x-6">
+                    <div class="flex-shrink-0">
+                        <div class="w-24 h-24 rounded-lg bg-primary-accent/10 flex items-center justify-center border-2 border-gray-200">
+                            <i data-feather="{{ category.get_icon }}" class="w-12 h-12 text-primary-accent"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-deep-brown-800 text-center sm:text-left">{{ category.name }}</h1>
+                        <p class="text-gray-600 mt-2 text-center sm:text-left">{{ category.description }}</p>
                     </div>
                 </div>
-                <div>
-                    <h1 class="text-3xl font-bold text-deep-brown-800 text-center sm:text-left">{{ category.name }}</h1>
-                    <p class="text-gray-600 mt-2 text-center sm:text-left">{{ category.description }}</p>
+                <!-- === TOMBOL FOLLOW DITAMBAHKAN DI SINI === -->
+                <div id="follow-category-button-container" class="flex-shrink-0">
+                    {% include 'app/partials/_follow_category_button.html' with category=category is_following=is_following %}
                 </div>
             </div>
         </div>

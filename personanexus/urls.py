@@ -25,6 +25,7 @@ urlpatterns = [
     path('', SignupView.as_view(), name="landing_signup"),
     path('accounts/', include('allauth.urls')),
     path('feed/', include("app.urls")),
+    path('tinymce/', include('tinymce.urls')),
     path('__reload__/', include('django_browser_reload.urls')),
 ]
 

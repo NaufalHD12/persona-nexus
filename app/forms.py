@@ -1,10 +1,11 @@
 from django import forms
 from .models import Comment, Post, Game, PostCategory
+from tinymce.widgets import TinyMCE  # <-- Impor TinyMCE
 
 class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
-        fields = ['content'] # Hanya field 'content' yang akan ditampilkan di form
+        fields = ['content']
         widgets = {
             'content': forms.Textarea(attrs={
                 'class': 'w-full p-3 border-2 border-deep-brown-200 rounded-lg focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition',
@@ -13,12 +14,11 @@ class CommentForm(forms.ModelForm):
             })
         }
         labels = {
-            'content': '' # Kita bisa hilangkan label jika tidak perlu
+            'content': ''
         }
 
 
 class PostForm(forms.ModelForm):
-    # Kita akan membuat field pilihan (dropdown) untuk Game dan Kategori
     game_title = forms.ModelChoiceField(
         queryset=Game.objects.all(),
         empty_label="Select a Game",
@@ -44,11 +44,8 @@ class PostForm(forms.ModelForm):
                 'class': 'w-full text-lg px-4 py-3 border-2 border-deep-brown-200 rounded-lg bg-gray-50 focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition',
                 'placeholder': 'An interesting title...'
             }),
-            'content': forms.Textarea(attrs={
-                'class': 'w-full text-base px-4 py-3 border-2 border-deep-brown-200 rounded-lg bg-gray-50 focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition',
-                'rows': 12,
-                'placeholder': 'Share your theories, fan art, or questions...'
-            }),
+            # === GANTI WIDGET INI ===
+            'content': TinyMCE(attrs={'cols': 80, 'rows': 30}),
             'cover_image': forms.ClearableFileInput(attrs={
                 'class': 'text-sm text-deep-brown-700'
             })

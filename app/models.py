@@ -165,15 +165,24 @@ class UserProfile(AbstractUser):
         blank=True
     )
     
+    following_games = models.ManyToManyField(
+        'Game',
+        related_name="followers",
+        blank=True
+    )
+    following_categories = models.ManyToManyField(
+        'PostCategory',
+        related_name="followers",
+        blank=True
+    )
+    
     def __str__(self):
         return self.username
     
     @property
     def avatar_url(self):
-        """Helper method untuk mendapatkan URL avatar"""
         if self.avatar and hasattr(self.avatar, 'url'):
             return self.avatar.url
-        # Sebaiknya gunakan static untuk default image, tapi ini juga bisa
         return f"{settings.STATIC_URL}images/avatars/default.png"
 
 

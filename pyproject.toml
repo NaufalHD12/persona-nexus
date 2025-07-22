@@ -17,7 +17,8 @@ dependencies = [
     "whitenoise (>=6.9.0,<7.0.0)",
     "psycopg (>=3.2.9,<4.0.0)",
     "django-browser-reload (>=1.18.0,<2.0.0)",
-    "django-htmx (>=1.23.0,<2.0.0)"
+    "django-htmx (>=1.23.0,<2.0.0)",
+    "django-tinymce (>=4.1.0,<5.0.0)"
 ]
 
 [tool.poetry]

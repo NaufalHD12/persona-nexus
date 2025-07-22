@@ -1,25 +1,86 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block head_title %}Update Post{% endblock %}
+{% block page_css %}
+    {{ form.media.css }}
+{% endblock %}
+
+{% block head_title %}Update Post{% endblock head_title %}
 
 {% block body %}
 <main class="container mx-auto p-4 md:p-6 lg:p-8">
-    <div class="max-w-4xl mx-auto">
-        <header class="mb-10">
-            <h1 class="text-4xl md:text-5xl font-bold font-poppins text-deep-brown">Update Post</h1>
-            <p class="text-lg text-deep-brown-700 mt-2">Make changes to your post.</p>
-        </header>
-        
-        <form method="post" enctype="multipart/form-data" class="bg-white rounded-xl shadow-lg p-6 md:p-8 space-y-6">
-            {% csrf_token %}
-            {{ form.as_p }} {# Anda bisa styling form ini lebih detail jika perlu #}
-            
-            <div class="flex justify-end items-center gap-4 pt-4 border-t border-deep-brown-200">
-                <a href="{{ post.get_absolute_url }}" class="btn btn-ghost">Cancel</a>
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-            </div>
-        </form>
+    <div class="max-w-3xl mx-auto py-8 px-4">
+        <div class="bg-white rounded-lg shadow-md p-8">
+            <h1 class="text-3xl font-bold text-deep-brown-800 mb-6 border-b pb-4">Update Your Post</h1>
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                <div class="space-y-6">
+                    <div>
+                        <label for="{{ form.title.id_for_label }}"
+                            class="block text-sm font-semibold text-deep-brown-700 mb-2">Title</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.title.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="{{ form.game_title.id_for_label }}"
+                                class="block text-sm font-semibold text-deep-brown-700 mb-2">Game (Optional)</label>
+                            {{ form.game_title }}
+                            {% if form.game_title.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.game_title.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="{{ form.category.id_for_label }}"
+                                class="block text-sm font-semibold text-deep-brown-700 mb-2">Category
+                                (Optional)</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.category.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.content.id_for_label }}"
+                            class="block text-sm font-semibold text-deep-brown-700 mb-2">Content</label>
+                        {{ form.content }}
+                        {% if form.content.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.content.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.cover_image.id_for_label }}"
+                            class="block text-sm font-semibold text-deep-brown-700 mb-2">Cover Image (Optional)</label>
+                        {% if post.cover_image %}
+                            <p class="text-xs text-gray-500 mb-2">Current: <a href="{{ post.cover_image.url }}" target="_blank" class="text-primary-accent hover:underline">{{ post.cover_image.name }}</a></p>
+                        {% endif %}
+                        {{ form.cover_image }}
+                        {% if form.cover_image.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.cover_image.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <a href="{{ post.get_absolute_url }}"
+                        class="text-gray-600 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 mr-4">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        Update Post
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </main>
 {% endblock body %}
+
+
+{% block page_js %}
+    {{ form.media.js }}
+{% endblock %}

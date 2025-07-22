@@ -18,6 +18,9 @@
                     <p class="text-gray-600 mt-2 text-center sm:text-left">{{ game.description }}</p>
                 </div>
             </div>
+            <div id="follow-game-button-container" class="flex-shrink-0">
+                    {% include 'app/partials/_follow_game_button.html' with game=game is_following=is_following %}
+            </div>
         </div>
 
         <!-- Search and Filter Section (Style from home.html) -->

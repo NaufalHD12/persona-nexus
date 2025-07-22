@@ -68,11 +68,23 @@ class FollowingPostListView(LoginRequiredMixin, ListView):
         return ["app/following.html"]
 
     def get_queryset(self):
-        following_users = Follow.objects.following(self.request.user)
-        if not following_users:
+        user = self.request.user
+        
+        # === LOGIKA BARU UNTUK FEED FOLLOWING ===
+        following_users = Follow.objects.following(user)
+        following_games = user.following_games.all()
+        following_categories = user.following_categories.all()
+
+        # Buat filter gabungan menggunakan Q objects
+        filters = Q(author__in=following_users) | \
+                  Q(game_title__in=following_games) | \
+                  Q(category__in=following_categories)
+        
+        # Jika tidak ada yang diikuti, kembalikan queryset kosong
+        if not (following_users or following_games or following_categories):
             return Post.objects.none()
 
-        queryset = Post.objects.filter(author__in=following_users).annotate(
+        queryset = Post.objects.filter(filters).distinct().annotate(
              score=Sum('votes__value', default=0)
         )
         
@@ -96,7 +108,6 @@ class FollowingPostListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # === PERUBAHAN: Ambil 9 game secara acak untuk rotasi ===
         context['featured_games'] = Game.objects.order_by('?')[:9]
         context['popular_categories'] = PostCategory.objects.annotate(
             num_posts=Count('posts')
@@ -245,8 +256,8 @@ class GameDetailView(LoginRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Kirim objek game ke template
         context['game'] = self.game
+        context['is_following'] = self.request.user.following_games.filter(pk=self.game.pk).exists()
         return context
 
 
@@ -295,9 +306,41 @@ class CategoryDetailView(LoginRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Kirim objek kategori ke template
         context['category'] = self.category
+        context['is_following'] = self.request.user.following_categories.filter(pk=self.category.pk).exists()
         return context
+    
+    
+class ToggleGameFollowView(LoginRequiredMixin, View):
+    def post(self, request, slug):
+        game = get_object_or_404(Game, slug=slug)
+        user = request.user
+        
+        if game in user.following_games.all():
+            user.following_games.remove(game)
+        else:
+            user.following_games.add(game)
+            
+        return render(request, 'app/partials/_follow_game_button.html', {
+            'game': game,
+            'is_following': user.following_games.filter(pk=game.pk).exists()
+        })
+
+
+class ToggleCategoryFollowView(LoginRequiredMixin, View):
+    def post(self, request, slug):
+        category = get_object_or_404(PostCategory, slug=slug)
+        user = request.user
+        
+        if category in user.following_categories.all():
+            user.following_categories.remove(category)
+        else:
+            user.following_categories.add(category)
+            
+        return render(request, 'app/partials/_follow_category_button.html', {
+            'category': category,
+            'is_following': user.following_categories.filter(pk=category.pk).exists()
+        })
     
 
 class CategoryListView(ListView):
