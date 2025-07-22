@@ -10,6 +10,11 @@
         <!-- Kolom Kiri: Konten Post -->
         <div class="lg:col-span-8">
             <article class="bg-white rounded-xl shadow-md overflow-hidden">
+                <!-- === COVER IMAGE DITAMBAHKAN DI SINI === -->
+                {% if post.cover_image %}
+                <img src="{{ post.cover_image.url }}" alt="{{ post.title }} cover image" class="w-full h-auto max-h-96 object-cover">
+                {% endif %}
+
                 <div class="p-5 md:p-8">
                     <!-- Header Post -->
                     <div class="mb-4">
@@ -123,7 +128,7 @@
                     <p class="text-sm text-gray-600 mt-4">
                         {{ post.author.bio|default:"This user hasn't written a bio yet." }}
                     </p>
-                    <a href="{% url 'profile_detail' post.author.username %}" class="mt-4 w-full block text-center px-4 py-2 bg-primary-accent text-white font-semibold rounded-lg hover:bg-opacity-90 transition">View Profile</a>
+                    <a href="{% url 'profile_detail' post.author.username %}" class="mt-4 w-full block text-center px-4 py-2 btn btn-primary text-black font-semibold rounded-lg">View Profile</a>
                 </div>
                 <div class="bg-white rounded-lg shadow-sm p-5">
                     <h3 class="font-bold text-deep-brown-800 mb-3">More from {{ post.game_title.title|default:"this community" }}</h3>
