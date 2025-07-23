@@ -176,6 +176,8 @@ class UserProfile(AbstractUser):
         blank=True
     )
     
+    karma = models.IntegerField(default=0)
+    
     def __str__(self):
         return self.username
     
@@ -205,12 +207,17 @@ class Comment(models.Model):
         related_name='replies') # Relasi ke komentar lain untuk membuat balasan berantai
     created_at = models.DateTimeField(auto_now_add=True)
     
-    def get_absolute_url(self):
-        # URL untuk komentar akan mengarah ke postingan induknya
-        return self.post.get_absolute_url() + f'#comment-{self.id}'
+    votes = GenericRelation('Vote')
+
+    @property
+    def vote_score(self):
+        return self.votes.aggregate(score=Sum('value'))['score'] or 0
     
     def __str__(self):
         return f'Comment by {self.author.username} on {self.post.title}'
+    
+    def get_absolute_url(self):
+        return self.post.get_absolute_url() + f'#comment-{self.id}'
     
 
 class Conversation(models.Model):
@@ -224,6 +231,9 @@ class Conversation(models.Model):
 
     class Meta:
         ordering = ['-updated_at']
+        
+    def get_absolute_url(self):
+        return reverse('conversation_detail', kwargs={'pk': self.pk})
 
 class Message(models.Model):
     """Mewakili satu pesan di dalam sebuah percakapan."""
@@ -250,10 +260,6 @@ class Message(models.Model):
     
 
 class Notification(models.Model):
-    """
-    Model generik untuk menangani semua jenis notifikasi di situs.
-    """
-    # Tipe notifikasi untuk mempermudah filtering dan rendering
     class NotificationType(models.TextChoices):
         NEW_MESSAGE = 'message', 'New Message'
         POST_VOTE = 'vote', 'Post Vote'
@@ -277,30 +283,52 @@ class Notification(models.Model):
         ordering = ['-timestamp']
 
     def __str__(self):
-        if self.action_object:
-            return f"{self.actor} {self.verb} {self.action_object}"
+        # String representation sederhana untuk admin dan debugging
         return f"{self.actor} {self.verb}"
+
+    # === PROPERTY BARU UNTUK MENAMPILKAN TEKS NOTIFIKASI YANG BENAR ===
+    @property
+    def summary_text(self):
+        """
+        Menghasilkan teks ringkasan yang bersih untuk ditampilkan di template.
+        """
+        verb = self.verb
+        target = self.action_object
+
+        # Kasus 1: Notifikasi tanpa objek target (Pesan, Follower)
+        if self.notification_type in [self.NotificationType.NEW_MESSAGE, self.NotificationType.NEW_FOLLOWER]:
+            return verb
+
+        if not target:
+            return verb # Fallback
+
+        # Kasus 2: Jika targetnya adalah Komentar (misal: mention di komentar)
+        if isinstance(target, Comment):
+            return f'{verb} "{target.post.title}"'
+
+        # Kasus 3: Untuk Post dan objek lain yang punya judul
+        if hasattr(target, 'title') and target.title:
+            return f'{verb} "{target.title}"'
+        
+        # Fallback untuk kasus lain (misal: Conversation)
+        return verb
 
     def get_absolute_url(self):
         """
         Membuat URL yang benar berdasarkan tipe notifikasi.
         """
-        # Jika notifikasi berhubungan dengan objek yang memiliki get_absolute_url (Post, Comment)
+        if self.notification_type == self.NotificationType.NEW_MESSAGE and self.action_object:
+            return self.action_object.get_absolute_url()
+
         if hasattr(self.action_object, 'get_absolute_url'):
-            # === LOGIKA BARU UNTUK MENTION ===
             if self.notification_type == self.NotificationType.MENTION:
-                # Untuk mention, action_object adalah Post atau Comment itu sendiri
                 return self.action_object.get_absolute_url()
-            # Logika lama untuk vote, komentar, balasan, dll.
-            # Jika action_object adalah Comment, kita ingin link ke Post-nya
             elif isinstance(self.action_object, Comment):
                 return self.action_object.post.get_absolute_url()
             else:
                 return self.action_object.get_absolute_url()
 
-        # Jika notifikasi adalah tentang follower baru
         elif self.notification_type == self.NotificationType.NEW_FOLLOWER and self.actor:
             return reverse('profile_detail', kwargs={'username': self.actor.username})
         
-        # Fallback jika tidak ada URL spesifik
         return reverse('notification_list')

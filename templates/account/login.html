@@ -56,8 +56,12 @@
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i data-feather="lock" class="h-5 w-5 text-deep-brown-400"></i></span>
                         <input type="password" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}"
-                            class="w-full pl-10 pr-4 py-2.5 border-2 border-deep-brown-200 rounded-lg focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition"
-                            placeholder="Enter your password">
+                            class="w-full pl-10 pr-10 py-2.5 border-2 border-deep-brown-200 rounded-lg focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition"
+                            placeholder="Enter your password"
+                            autocomplete="current-password">  <!-- Untuk login gunakan current-password -->
+                        <button type="button" onclick="togglePassword('{{ form.password.id_for_label }}')" class="absolute inset-y-0 right-0 flex items-center pr-3">
+                            <i data-feather="eye" class="h-5 w-5 text-deep-brown-400 hover:text-deep-brown-600 cursor-pointer"></i>
+                        </button>
                     </div>
                     {% for error in form.password.errors %}
                         <p class="mt-2 text-sm text-red-600">{{ error }}</p>
@@ -88,4 +92,20 @@
         </div>
     </div>
 </div>
+
+<script>
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = input.nextElementSibling.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.setAttribute('data-feather', 'eye-off');
+    } else {
+        input.type = 'password';
+        icon.setAttribute('data-feather', 'eye');
+    }
+    feather.replace(); // Refresh icons
+}
+</script>
 {% endblock body %}

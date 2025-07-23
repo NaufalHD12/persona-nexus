@@ -10,43 +10,58 @@
                 {{ comment.content|render_mentions|safe }}
             </div>
 
-            <!-- Tombol & Form Balasan -->
-            <details class="mt-2 group">
-                <summary class="text-xs font-semibold text-deep-brown-600 cursor-pointer list-none inline-block">
-                    <span class="group-open:hidden">Reply</span>
-                    <span class="hidden group-open:inline">Cancel</span>
-                </summary>
-                <!-- === WRAPPER BARU UNTUK MENTION DI BALASAN === -->
-                <div x-data="commentMentionHandler('reply-textarea-{{ comment.id }}')" class="relative">
-                    <form action="{% url 'add_comment' slug=post.slug %}" method="post" class="mt-2">
-                        {% csrf_token %}
-                        <input type="hidden" name="parent_id" value="{{ comment.id }}">
-                        <!-- Berikan ID unik dan tambahkan event listener -->
-                        <textarea name="content" id="reply-textarea-{{ comment.id }}"
-                                  @keyup="handleKeyUp" @keydown="handleKeyDown"
-                                  class="w-full text-sm p-2 border-2 rounded-lg focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition" 
-                                  rows="2" placeholder="Write a reply..."></textarea>
-                        <button type="submit" class="btn btn-primary btn-sm mt-2 text-xs px-4 py-1">Post Reply</button>
-                    </form>
-                    <!-- Popup Autocomplete untuk Balasan -->
-                    <div x-show="open" @click.away="open = false"
-                         x-transition
-                         :style="`position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 4px;`"
-                         class="w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden p-1"
-                         x-cloak>
-                        <ul class="max-h-48 overflow-y-auto">
-                            <template x-for="(user, index) in results" :key="user.id">
-                                <li @click="selectUser(user)"
-                                    :class="{ 'bg-gray-100': index === activeIndex }"
-                                    class="flex items-center p-2 cursor-pointer hover:bg-gray-100 rounded-md">
-                                    <img :src="user.avatar" class="w-8 h-8 rounded-full object-cover mr-3">
-                                    <span class="font-semibold text-sm text-gray-800" x-text="user.text"></span>
-                                </li>
-                            </template>
-                        </ul>
-                    </div>
+            <div class="mt-2 flex items-center gap-4">
+                <!-- Vote Buttons -->
+                <div class="vote-section flex items-center gap-1 text-xs font-semibold">
+                    <button class="vote-btn p-1 rounded-full {% if comment.user_vote_value == 1 %}bg-green-200{% else %}hover:bg-green-100{% endif %}"
+                            data-url="{% url 'vote' model_name='comment' pk=comment.id direction='up' %}">
+                        <i data-feather="arrow-up" class="w-4 h-4 text-green-600"></i>
+                    </button>
+                    <span class="vote-score text-gray-700 font-bold">{{ comment.vote_score }}</span>
+                    <!-- === PERBAIKAN LOGIKA DISABLED === -->
+                    <button class="vote-btn p-1 rounded-full {% if comment.user_vote_value == -1 %}bg-red-200{% else %}hover:bg-red-100{% endif %} {% if comment.vote_score <= 0 and comment.user_vote_value != -1 %}disabled:opacity-50{% endif %}"
+                            data-url="{% url 'vote' model_name='comment' pk=comment.id direction='down' %}"
+                            {% if comment.vote_score <= 0 and comment.user_vote_value != -1 %}disabled{% endif %}>
+                        <i data-feather="arrow-down" class="w-4 h-4 text-red-600"></i>
+                    </button>
                 </div>
-            </details>
+
+                <!-- Tombol Balasan -->
+                <details class="group relative">
+                    <summary class="text-xs font-semibold text-deep-brown-600 cursor-pointer list-none inline-block">
+                        <span class="group-open:hidden">Reply</span>
+                        <span class="hidden group-open:inline">Cancel</span>
+                    </summary>
+                    <div x-data="commentMentionHandler('reply-textarea-{{ comment.id }}')" class="absolute top-full left-0 mt-2 z-10 w-full min-w-[300px]">
+                        <form action="{% url 'add_comment' slug=post.slug %}" method="post" class="mt-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                            <textarea name="content" id="reply-textarea-{{ comment.id }}"
+                                      @keyup="handleKeyUp" @keydown="handleKeyDown"
+                                      class="w-full text-sm p-2 border-2 rounded-lg focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition" 
+                                      rows="2" placeholder="Write a reply..."></textarea>
+                            <button type="submit" class="btn btn-primary btn-sm mt-2 text-xs px-4 py-1">Post Reply</button>
+                        </form>
+                        <!-- Popup Autocomplete untuk Balasan -->
+                        <div x-show="open" @click.away="open = false"
+                             x-transition
+                             :style="`position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 4px;`"
+                             class="w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden p-1"
+                             x-cloak>
+                            <ul class="max-h-48 overflow-y-auto">
+                                <template x-for="(user, index) in results" :key="user.id">
+                                    <li @click="selectUser(user)"
+                                        :class="{ 'bg-gray-100': index === activeIndex }"
+                                        class="flex items-center p-2 cursor-pointer hover:bg-gray-100 rounded-md">
+                                        <img :src="user.avatar" class="w-8 h-8 rounded-full object-cover mr-3">
+                                        <span class="font-semibold text-sm text-gray-800" x-text="user.text"></span>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+                    </div>
+                </details>
+            </div>
         </div>
     </div>
 

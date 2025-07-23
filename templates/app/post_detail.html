@@ -69,9 +69,10 @@
                                 <i data-feather="arrow-up" class="w-6 h-6 text-green-600"></i>
                             </button>
                             <span class="vote-score text-lg">{{ post.vote_score }}</span>
-                            <button class="vote-btn p-1 rounded-full {% if post.user_vote_value == -1 %}bg-red-200{% else %}hover:bg-red-100{% endif %}"
+                            <button class="vote-btn p-1 rounded-full {% if post.user_vote_value == -1 %}bg-red-200{% else %}hover:bg-red-100{% endif %}
+                                        {% if post.score <= 0 and post.user_vote_value != -1 %}disabled:opacity-50{% endif %}"
                                     data-url="{% url 'vote' model_name='post' pk=post.id direction='down' %}"
-                                    {% if post.vote_score <= 0 and post.user_vote_value != -1 %}disabled{% endif %}>
+                                    {% if post.score <= 0 and post.user_vote_value != -1 %}disabled{% endif %}>
                                 <i data-feather="arrow-down" class="w-6 h-6 text-red-600"></i>
                             </button>
                         </div>
@@ -175,60 +176,62 @@
 
 {% block page_js %}
 <script>
-    // Script ini akan menangani logika voting di halaman detail
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        const voteButton = e.target.closest('.vote-btn');
+        if (!voteButton) return;
+
+        e.preventDefault();
+        if (voteButton.disabled) return;
+
+        const url = voteButton.dataset.url;
+        const voteSection = voteButton.closest('.vote-section');
+        if (!voteSection) return;
+
         function getCsrfToken() {
-            // Fungsi helper untuk mendapatkan CSRF token dari cookie
             return document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
         }
 
-        document.querySelectorAll('.vote-btn').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (this.disabled) return;
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCsrfToken(),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const scoreElement = voteSection.querySelector('.vote-score');
+                const upvoteBtn = voteSection.querySelector('[data-url*="up"]');
+                const downvoteBtn = voteSection.querySelector('[data-url*="down"]');
                 
-                const url = this.dataset.url;
-                const voteSection = this.closest('.vote-section');
-                if (!voteSection) return;
+                scoreElement.textContent = data.score;
+                
+                upvoteBtn.classList.remove('bg-green-200', 'bg-green-100');
+                downvoteBtn.classList.remove('bg-red-200', 'bg-red-100');
+                upvoteBtn.classList.add('hover:bg-green-100');
+                downvoteBtn.classList.add('hover:bg-red-100');
 
-                fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': getCsrfToken(),
-                        'Content-Type': 'application/json',
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const scoreElement = voteSection.querySelector('.vote-score');
-                        const upvoteBtn = voteSection.querySelector('[data-url*="up"]');
-                        const downvoteBtn = voteSection.querySelector('[data-url*="down"]');
-                        
-                        scoreElement.textContent = data.score;
-                        
-                        upvoteBtn.classList.remove('bg-green-200');
-                        downvoteBtn.classList.remove('bg-red-200');
-
-                        if (data.user_vote_status === 'up') {
-                            upvoteBtn.classList.add('bg-green-200');
-                        } else if (data.user_vote_status === 'down') {
-                            downvoteBtn.classList.add('bg-red-200');
-                        }
-                        
-                        // Logika untuk menonaktifkan tombol downvote
-                        const isDisabled = data.score <= 0 && data.user_vote_status !== 'down';
-                        downvoteBtn.disabled = isDisabled;
-                        if (isDisabled) {
-                            downvoteBtn.classList.add('disabled:opacity-50');
-                        } else {
-                            downvoteBtn.classList.remove('disabled:opacity-50');
-                        }
+                if (data.user_vote_status === 'up') {
+                    upvoteBtn.classList.add('bg-green-200');
+                    upvoteBtn.classList.remove('hover:bg-green-100');
+                } else if (data.user_vote_status === 'down') {
+                    downvoteBtn.classList.add('bg-red-200');
+                    downvoteBtn.classList.remove('hover:bg-red-100');
+                }
+                
+                if (downvoteBtn) {
+                    const isDisabled = data.score <= 0 && data.user_vote_status !== 'down';
+                    downvoteBtn.disabled = isDisabled;
+                    if (isDisabled) {
+                        downvoteBtn.classList.add('disabled:opacity-50');
+                    } else {
+                        downvoteBtn.classList.remove('disabled:opacity-50');
                     }
-                })
-                .catch(error => console.error('Error:', error));
-            });
-        });
+                }
+            }
+        })
+        .catch(error => console.error('Error:', error));
     });
 
     function commentMentionHandler(textareaId) {

@@ -1,5 +1,5 @@
 {% load static %}
-
+{% load humanize %}
 <div x-data="{
         show: true,
         init() {
@@ -38,15 +38,10 @@
                     {{ notification.actor.username }}
                 </p>
                 <p class="mt-1 text-sm text-gray-600 break-words">
-                    {{ notification.verb }} 
-                    {% if notification.action_object %}
-                    <span class="font-semibold text-gray-800">
-                        "{{ notification.action_object.title|default:notification.action_object|truncatechars:25 }}"
-                    </span>
-                    {% endif %}
+                    {{ notification.summary_text|truncatechars:80 }}
                 </p>
                 <p class="mt-1 text-xs text-gray-400">
-                    {{ notification.timestamp|timesince }} ago
+                    {{ notification.timestamp|naturaltime }}
                 </p>
             </div>
             <div class="ml-4 flex-shrink-0 flex">

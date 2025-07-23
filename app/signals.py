@@ -1,8 +1,9 @@
-from django.db.models.signals import post_save, m2m_changed, pre_save
+from django.db.models.signals import post_save, m2m_changed, pre_save, post_delete
 from django.dispatch import receiver
-from .models import Comment, Notification, UserProfile, Vote, Post
+from .models import Comment, Notification, UserProfile, Vote, Post, Message, Conversation
 from friendship.models import Follow
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Sum
 import re
 
 # === Sinyal pre_save BARU untuk menyimpan mention lama ===
@@ -163,3 +164,54 @@ def create_save_post_notification(sender, instance, action, pk_set, **kwargs):
                 action_object=post,
                 notification_type=Notification.NotificationType.POST_SAVE
             )
+
+
+@receiver(post_save, sender=Vote)
+@receiver(post_delete, sender=Vote)
+def update_user_karma(sender, instance, **kwargs):
+    """
+    Update karma pengguna setiap kali vote dibuat atau dihapus.
+    """
+    content_object = instance.content_object
+    
+    # Pastikan objek yang divote (post/comment) masih ada
+    if not content_object:
+        return
+
+    user_to_update = content_object.author
+    
+    # Hitung total skor dari semua post milik pengguna
+    post_karma = Post.objects.filter(author=user_to_update).aggregate(
+        total_score=Sum('votes__value')
+    )['total_score'] or 0
+
+    # Hitung total skor dari semua comment milik pengguna
+    comment_karma = Comment.objects.filter(author=user_to_update).aggregate(
+        total_score=Sum('votes__value')
+    )['total_score'] or 0
+    
+    # Update total karma
+    user_to_update.karma = post_karma + comment_karma
+    user_to_update.save(update_fields=['karma'])
+
+
+@receiver(post_save, sender=Message)
+def create_message_notification(sender, instance, created, **kwargs):
+    """
+    Membuat notifikasi "lonceng" saat ada pesan baru.
+    """
+    if created:
+        message = instance
+        conversation = message.conversation
+        sender = message.sender
+        
+        # Cari penerima pesan (semua peserta selain pengirim)
+        for participant in conversation.participants.all():
+            if participant != sender:
+                Notification.objects.create(
+                    recipient=participant,
+                    actor=sender,
+                    verb="sent you a new message.",
+                    action_object=conversation, # Tautkan notifikasi ke percakapan
+                    notification_type=Notification.NotificationType.NEW_MESSAGE
+                )

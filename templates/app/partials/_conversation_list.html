@@ -33,23 +33,18 @@
             {% endif %}
         </div>
         
-        <div class="flex flex-col items-end flex-shrink-0">
+        <div class="flex flex-col items-end flex-shrink-0 space-y-1">
             <div class="text-xs text-deep-brown-400">
                 {% if conv.messages.last %}
-                    {# PERBAIKAN: Gunakan 'timestamp' bukan 'created_at' untuk pesan #}
                     {{ conv.messages.last.timestamp|naturaltime }}
                 {% else %}
                     {{ conv.updated_at|naturaltime }}
                 {% endif %}
             </div>
-            {% comment %}
-            <!-- Uncomment this if you have unread message functionality -->
+            <!-- === INDIKATOR PESAN BELUM DIBACA === -->
             {% if conv.unread_count > 0 %}
-                <div class="bg-primary-accent text-white text-xs rounded-full w-5 h-5 flex items-center justify-center mt-1">
-                    {{ conv.unread_count }}
-                </div>
+                <span class="w-3 h-3 mt-1 bg-primary-accent rounded-full" title="{{ conv.unread_count }} unread message{{ conv.unread_count|pluralize }}"></span>
             {% endif %}
-            {% endcomment %}
         </div>
     </a>
     {% empty %}

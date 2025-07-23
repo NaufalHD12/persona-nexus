@@ -131,15 +131,26 @@ class PostDetailView(LoginRequiredMixin, DetailView):
         
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Tambahkan anotasi vote ke objek post utama
         post = context['post']
         if self.request.user.is_authenticated:
             user_vote = post.votes.filter(user=self.request.user).first()
             post.user_vote_value = user_vote.value if user_vote else None
             
+        # === PERUBAHAN: Anotasi vote pengguna pada setiap komentar ===
+        comments_qs = post.comments.filter(parent__isnull=True).order_by('created_at')
+        if self.request.user.is_authenticated:
+            user_vote_subquery = Vote.objects.filter(
+                user=self.request.user,
+                content_type=ContentType.objects.get_for_model(Comment),
+                object_id=OuterRef('pk')
+            ).values('value')
+            comments_qs = comments_qs.annotate(
+                user_vote_value=Subquery(user_vote_subquery[:1])
+            )
+
+        context['comments_with_votes'] = comments_qs
         context['comment_form'] = CommentForm()
         return context
-
 
 class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Post
@@ -352,48 +363,64 @@ class CategoryListView(ListView):
 class VoteView(LoginRequiredMixin, View):
     
     def post(self, request, model_name, pk, direction):
-        # 1. Dapatkan model dan objek yang akan di-vote
         try:
             model = ContentType.objects.get(model=model_name).model_class()
         except ContentType.DoesNotExist:
             return JsonResponse({'error': 'Invalid model name'}, status=400)
         
         content_object = get_object_or_404(model, pk=pk)
-        
-        # 2. Tentukan nilai vote yang diinginkan
+        user = request.user
         vote_value = Vote.UPVOTE if direction == 'up' else Vote.DOWNVOTE
 
-        # 3. Coba dapatkan vote yang sudah ada dari pengguna untuk objek ini
-        try:
-            vote = Vote.objects.get(
-                user=request.user,
-                content_type=ContentType.objects.get_for_model(content_object),
-                object_id=content_object.id
-            )
-            
-            # **LOGIKA BARU:**
-            # Jika pengguna menekan tombol yang sama, batalkan vote.
-            if vote.value == vote_value:
-                vote.delete()
-                user_vote_status = 'none'
-            # Jika pengguna menekan tombol yang BERLAWANAN, batalkan juga vote yang lama.
-            else:
-                vote.delete()
-                user_vote_status = 'none'
+        existing_vote = Vote.objects.filter(
+            user=user,
+            content_type=ContentType.objects.get_for_model(content_object),
+            object_id=content_object.id
+        ).first()
 
-        # Jika belum ada vote, buat yang baru.
-        except Vote.DoesNotExist:
+        # === PERBAIKAN LOGIKA INTI ===
+        if existing_vote:
+            # Jika pengguna mengklik tombol yang sama, batalkan vote (hapus)
+            if existing_vote.value == vote_value:
+                existing_vote.delete()
+            # Jika pengguna mengklik tombol yang berlawanan, ubah vote
+            else:
+                # Sebelum mengubah ke downvote, periksa apakah skor akan menjadi negatif
+                # Skor saat ini adalah 1 (karena ada upvote), jika diubah jadi downvote, skor jadi -1.
+                # Kita harus mencegah ini. Skor efektif setelah menghapus upvote adalah 0.
+                if vote_value == Vote.DOWNVOTE and content_object.vote_score <= 1:
+                    return JsonResponse({'error': 'Cannot downvote below zero.'}, status=403)
+                existing_vote.value = vote_value
+                existing_vote.save()
+        else:
+            # Jika ini adalah vote baru
+            # Periksa apakah ini downvote pada skor 0 atau kurang
+            if vote_value == Vote.DOWNVOTE and content_object.vote_score <= 0:
+                return JsonResponse({'error': 'Cannot downvote below zero.'}, status=403)
+            
             Vote.objects.create(
-                user=request.user,
+                user=user,
                 content_object=content_object,
                 value=vote_value
             )
-            user_vote_status = 'up' if vote_value == Vote.UPVOTE else 'down'
 
-        # 4. Kembalikan skor baru dan status vote pengguna
+        # Selalu hitung ulang skor akhir dari database sebagai sumber kebenaran
+        final_score = content_object.vote_score
+        
+        # Dapatkan status vote pengguna saat ini untuk dikirim kembali ke frontend
+        current_user_vote = Vote.objects.filter(
+            user=user,
+            content_type=ContentType.objects.get_for_model(content_object),
+            object_id=content_object.id
+        ).first()
+        
+        user_vote_status = 'none'
+        if current_user_vote:
+            user_vote_status = 'up' if current_user_vote.value == Vote.UPVOTE else 'down'
+
         return JsonResponse({
             'success': True,
-            'score': content_object.vote_score,
+            'score': final_score,
             'user_vote_status': user_vote_status
         })
         
@@ -429,7 +456,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 class ProfileDetailView(DetailView):
     model = UserProfile
     template_name = 'app/profile_detail.html'
-    context_object_name = 'profile_user' # Nama variabel untuk pengguna di template
+    context_object_name = 'profile_user'
     slug_field = 'username'
     slug_url_kwarg = 'username'
 
@@ -437,12 +464,17 @@ class ProfileDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         profile_user = self.get_object()
         
+        # Ambil data yang sudah ada
         context['posts'] = profile_user.posts.all().order_by('-created_at')
-
         if self.request.user == profile_user:
             context['saved_posts'] = profile_user.saved_posts.all().order_by('-created_at')
-        context['followers_count'] = len(Follow.objects.followers(profile_user))
-        context['following_count'] = len(Follow.objects.following(profile_user))
+        
+        # === TAMBAHKAN DATA BARU UNTUK PROFIL ===
+        context['comments'] = profile_user.comments.all().order_by('-created_at')
+        context['followers'] = Follow.objects.followers(profile_user)
+        context['following'] = Follow.objects.following(profile_user)
+        context['followers_count'] = len(context['followers'])
+        context['following_count'] = len(context['following'])
         
         is_following = False
         if self.request.user.is_authenticated and self.request.user != profile_user:
@@ -499,21 +531,29 @@ class InboxView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Selalu sediakan daftar percakapan untuk sidebar kiri
-        context['conversations'] = self.request.user.conversations.all().order_by('-updated_at')
+        user = self.request.user
         
-        # Jika ada 'pk' di URL, berarti kita ingin menampilkan percakapan spesifik
+        # === PERBAIKAN: Anotasi setiap percakapan dengan jumlah pesan yang belum dibaca ===
+        conversations = user.conversations.annotate(
+            unread_count=Count(
+                'messages',
+                filter=Q(messages__is_read=False) & ~Q(messages__sender=user)
+            )
+        ).order_by('-updated_at')
+        
+        context['conversations'] = conversations
+        
         if 'pk' in kwargs:
             conversation = get_object_or_404(
                 Conversation, 
                 pk=kwargs['pk'], 
-                participants=self.request.user
+                participants=user
             )
             context['conversation'] = conversation
             context['message_form'] = MessageForm()
             
-            # Tandai semua pesan di percakapan ini yang bukan milik kita sebagai "telah dibaca"
-            conversation.messages.exclude(sender=self.request.user).update(is_read=True)
+            # Tandai pesan di percakapan ini sebagai "telah dibaca"
+            conversation.messages.filter(is_read=False).exclude(sender=user).update(is_read=True)
         
         return context
 

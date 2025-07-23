@@ -1,0 +1,9 @@
+{% load mention_tags %}
+<div class="p-4 bg-gray-50 rounded-lg border">
+    <p class="text-xs text-gray-500 mb-2">
+        Commented on <a href="{{ comment.post.get_absolute_url }}" class="font-semibold text-secondary-accent hover:underline">{{ comment.post.title }}</a>
+    </p>
+    <div class="prose prose-sm max-w-none text-gray-700">
+        {{ comment.content|render_mentions|safe|truncatewords_html:30 }}
+    </div>
+</div>

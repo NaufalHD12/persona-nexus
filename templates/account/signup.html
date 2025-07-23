@@ -48,7 +48,6 @@
                     <label for="{{ field.id_for_label }}" class="block text-sm font-bold text-deep-brown mb-2">{{ field.label }}</label>
                     
                     <div class="relative">
-                        {# Tambahkan ikon berdasarkan nama field (opsional) #}
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3">
                             {% if field.name == 'email' or field.name == 'login' %}
                                 <i data-feather="mail" class="h-5 w-5 text-deep-brown-400"></i>
@@ -59,12 +58,18 @@
                             {% endif %}
                         </span>
                         
-                        {# Render field input dengan kelas CSS kita #}
                         <input type="{{ field.field.widget.input_type }}" 
-                               name="{{ field.name }}" 
-                               id="{{ field.id_for_label }}"
-                               class="w-full pl-10 pr-4 py-2.5 border-2 border-deep-brown-200 rounded-lg focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition"
-                               placeholder="{{ field.label }}...">
+                            name="{{ field.name }}" 
+                            id="{{ field.id_for_label }}"
+                            class="w-full pl-10 pr-10 py-2.5 border-2 border-deep-brown-200 rounded-lg focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition"
+                            placeholder="{{ field.label }}..."
+                            {% if 'password' in field.name %}autocomplete="new-password"{% endif %}>
+                        
+                        {% if 'password' in field.name %}
+                        <button type="button" onclick="togglePassword('{{ field.id_for_label }}')" class="absolute inset-y-0 right-0 flex items-center pr-3">
+                            <i data-feather="eye" class="h-5 w-5 text-deep-brown-400 hover:text-deep-brown-600 cursor-pointer"></i>
+                        </button>
+                        {% endif %}
                     </div>
 
                     {# Tampilkan pesan error spesifik untuk field ini #}
@@ -88,4 +93,20 @@
         </div>
     </div>
 </div>
+
+<script>
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = input.nextElementSibling.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.setAttribute('data-feather', 'eye-off');
+    } else {
+        input.type = 'password';
+        icon.setAttribute('data-feather', 'eye');
+    }
+    feather.replace(); // Refresh icons
+}
+</script>
 {% endblock body %}

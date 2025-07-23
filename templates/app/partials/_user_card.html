@@ -1,0 +1,9 @@
+<div class="flex items-center space-x-4">
+    <a href="{% url 'profile_detail' username=user_obj.username %}">
+        <img src="{{ user_obj.avatar.url }}" alt="{{ user_obj.username }}'s avatar" class="w-12 h-12 rounded-full object-cover">
+    </a>
+    <div>
+        <a href="{% url 'profile_detail' username=user_obj.username %}" class="font-bold text-gray-800 hover:underline">{{ user_obj.username }}</a>
+        <p class="text-sm text-gray-500">{{ user_obj.bio|truncatechars:40 }}</p>
+    </div>
+</div>

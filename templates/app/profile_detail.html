@@ -4,112 +4,113 @@
 {% block head_title %}{{ profile_user.username }}'s Profile{% endblock head_title %}
 
 {% block body %}
-<main class="container mx-auto p-4 md:p-6 lg:p-8">
-    <div class="grid lg:grid-cols-12 gap-8 items-start">
-        
-        <!-- Kolom Kiri: Sidebar Profil -->
-        <aside class="lg:col-span-4 lg:sticky lg:top-28 space-y-6">
-            <div class="bg-white rounded-xl shadow-lg p-6 text-center relative">
-                <!-- Profile image with proper spacing -->
-                <div class="relative -mt-12 mb-4">
-                    <img src="{{ profile_user.avatar.url }}" alt="{{ profile_user.username }}'s Avatar" class="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-primary-accent shadow-md object-cover mx-auto bg-white">
-                </div>
-                
-                <h1 class="text-xl md:text-2xl font-bold font-poppins text-deep-brown">{{ profile_user.username }}</h1>
-                <p class="text-sm text-deep-brown-700 mt-2 px-4">{{ profile_user.bio|default:"No bio yet." }}</p>
-
-                <!-- Statistik Pengguna -->
-                <div class="flex justify-center gap-4 md:gap-6 mt-6 border-t border-b border-deep-brown-200 py-3">
-                    <div class="text-center">
-                        <p class="text-lg md:text-xl font-bold font-poppins">{{ posts.count }}</p>
-                        <p class="text-xs text-deep-brown-600">Posts</p>
+<main class="container mx-auto p-10 md:p-12 lg:p-14">
+    <!-- Profile Header -->
+    <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+        <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+            <img src="{{ profile_user.avatar.url }}" alt="{{ profile_user.username }}'s avatar"
+                class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg flex-shrink-0 -mt-16 md:-mt-12">
+            <div class="text-center md:text-left flex-grow">
+                <h1 class="text-3xl font-bold font-poppins text-deep-brown">{{ profile_user.username }}</h1>
+                <p class="text-gray-600 mt-2">{{ profile_user.bio|default:"No bio yet." }}</p>
+                <div class="flex justify-center md:justify-start flex-wrap gap-x-6 gap-y-2 mt-4 text-gray-700">
+                    <div class="flex items-center gap-1">
+                        <i data-feather="star" class="w-4 h-4 text-yellow-500"></i>
+                        <span class="font-bold text-lg">{{ profile_user.karma }}</span>
+                        <span class="text-sm">Karma</span>
                     </div>
-                    <div class="text-center">
-                        <p class="text-lg md:text-xl font-bold font-poppins">{{ followers_count }}</p>
-                        <p class="text-xs text-deep-brown-600">Followers</p>
+                    <div class="flex items-center gap-1">
+                         <i data-feather="file-text" class="w-4 h-4 text-blue-500"></i>
+                        <span class="font-bold text-lg">{{ posts.count }}</span>
+                        <span class="text-sm">Posts</span>
                     </div>
-                    <div class="text-center">
-                        <p class="text-lg md:text-xl font-bold font-poppins">{{ following_count }}</p>
-                        <p class="text-xs text-deep-brown-600">Following</p>
+                    <div class="flex items-center gap-1">
+                        <i data-feather="message-square" class="w-4 h-4 text-green-500"></i>
+                        <span class="font-bold text-lg">{{ comments.count }}</span>
+                        <span class="text-sm">Comments</span>
                     </div>
-                </div>
-
-                <div class="mt-6">
-                    {% if profile_user != request.user %}
-                        {# Bungkus kedua tombol dengan div flex ini #}
-                        <div class="flex items-center gap-4">
-                            
-                            {# Tombol Follow/Unfollow #}
-                            <form action="{% url 'toggle_follow' username=profile_user.username %}" method="post" class="flex-1">
-                                {% csrf_token %}
-                                {% if is_following %}
-                                    <button type="submit" class="w-full btn btn-outline">Unfollow</button>
-                                {% else %}
-                                    <button type="submit" class="w-full btn btn-secondary">Follow</button>
-                                {% endif %}
-                            </form>
-
-                            {# Tombol Message #}
-                            <a href="{% url 'start_conversation' username=profile_user.username %}" class="btn btn-primary flex-1">Message</a>
-                        
-                        </div>
-                    {% endif %}
                 </div>
             </div>
-        </aside>
+            <div class="mt-4 md:mt-0 flex-shrink-0">
+                {% if request.user == profile_user %}
+                <a href="{% url 'account_settings' %}" class="btn btn-outline gap-2">
+                    <i data-feather="edit-2" class="w-4 h-4"></i> Edit Profile
+                </a>
+                {% else %}
+                <div class="flex gap-2">
+                    <form action="{% url 'toggle_follow' profile_user.username %}" method="post" class="inline">
+                        {% csrf_token %}
+                        {% if is_following %}
+                        <button type="submit" class="btn btn-outline gap-2">
+                            <i data-feather="check" class="w-4 h-4"></i> Following
+                        </button>
+                        {% else %}
+                        <button type="submit" class="btn btn-primary gap-2">
+                            <i data-feather="user-plus" class="w-4 h-4"></i> Follow
+                        </button>
+                        {% endif %}
+                    </form>
+                    <a href="{% url 'start_conversation' profile_user.username %}" class="btn btn-secondary gap-2">
+                        <i data-feather="send" class="w-4 h-4"></i> Message
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 
-        <!-- Kolom Kanan: Konten dengan Tab -->
-        <div class="lg:col-span-8" x-data="{ tab: 'posts' }">
-            <!-- Tombol Tab (DIPERBAIKI) -->
-            <div class="flex border-b-2 border-deep-brown-200 mb-6 gap-2 md:gap-4 overflow-x-auto">
-                <button 
-                    @click="tab = 'posts'" 
-                    :class="{ 
-                        'border-primary-accent text-deep-brown font-semibold': tab === 'posts',
-                        'border-transparent text-deep-brown-600 hover:text-secondary-accent': tab !== 'posts'
-                    }" 
-                    class="font-poppins py-2 px-3 md:px-5 border-b-4 whitespace-nowrap transition-colors">
+    <!-- Tabs for Posts, Comments, Followers, etc. -->
+    <div class="mt-8" x-data="{ tab: 'posts' }">
+        <div class="flex border-b-2 border-deep-brown-200 mb-6">
+            <nav class="flex gap-4" aria-label="Tabs">
+                <button @click="tab = 'posts'" 
+                        :class="{ 'border-primary-accent text-deep-brown font-semibold': tab === 'posts', 'border-transparent text-deep-brown-600 hover:text-secondary-accent transition': tab !== 'posts' }"
+                        class="font-poppins py-2 px-4 border-b-4">
                     Posts
                 </button>
-                {% if profile_user == request.user %}
-                <button 
-                    @click="tab = 'saved'" 
-                    :class="{ 
-                        'border-primary-accent text-deep-brown font-semibold': tab === 'saved',
-                        'border-transparent text-deep-brown-600 hover:text-secondary-accent': tab !== 'saved'
-                    }" 
-                    class="font-poppins py-2 px-3 md:px-5 border-b-4 whitespace-nowrap transition-colors">
+                <button @click="tab = 'comments'" 
+                        :class="{ 'border-primary-accent text-deep-brown font-semibold': tab === 'comments', 'border-transparent text-deep-brown-600 hover:text-secondary-accent transition': tab !== 'comments' }"
+                        class="font-poppins py-2 px-4 border-b-4">
+                    Comments
+                </button>
+                {% if request.user == profile_user %}
+                <button @click="tab = 'saved'" 
+                        :class="{ 'border-primary-accent text-deep-brown font-semibold': tab === 'saved', 'border-transparent text-deep-brown-600 hover:text-secondary-accent transition': tab !== 'saved' }"
+                        class="font-poppins py-2 px-4 border-b-4">
                     Saved
                 </button>
                 {% endif %}
+                <button @click="tab = 'followers'" 
+                        :class="{ 'border-primary-accent text-deep-brown font-semibold': tab === 'followers', 'border-transparent text-deep-brown-600 hover:text-secondary-accent transition': tab !== 'followers' }"
+                        class="font-poppins py-2 px-4 border-b-4">
+                    Followers ({{ followers_count }})
+                </button>
+                <button @click="tab = 'following'" 
+                        :class="{ 'border-primary-accent text-deep-brown font-semibold': tab === 'following', 'border-transparent text-deep-brown-600 hover:text-secondary-accent transition': tab !== 'following' }"
+                        class="font-poppins py-2 px-4 border-b-4">
+                    Following ({{ following_count }})
+                </button>
+            </nav>
+        </div>
+
+        <!-- Konten Tab -->
+        <div class="mt-6">
+            <div x-show="tab === 'posts'" class="space-y-6">
+                {% for post in posts %}{% include 'app/partials/_post_card_simple.html' with post=post %}{% empty %}<p class="text-gray-500 col-span-full text-center py-8">No posts yet.</p>{% endfor %}
             </div>
-
-            <!-- Panel Konten Tab -->
-            <div>
-                <!-- Panel untuk Postingan -->
-                <div x-show="tab === 'posts'" class="space-y-6">
-                    {% for post in posts %}
-                        {% include 'app/partials/_post_card_simple.html' with post=post %}
-                    {% empty %}
-                        <div class="bg-white rounded-xl shadow-md p-8 text-center">
-                            <p class="text-deep-brown-700">{{ profile_user.username }} has not created any posts yet.</p>
-                        </div>
-                    {% endfor %}
-                </div>
-
-
-                <!-- Panel untuk Postingan Tersimpan -->
-                {% if profile_user == request.user %}
-                <div x-show="tab === 'saved'" style="display: none;" class="space-y-6">
-                    {% for post in saved_posts %}
-                        {% include 'app/partials/_post_card_simple.html' with post=post %}
-                    {% empty %}
-                        <div class="bg-white rounded-xl shadow-md p-8 text-center">
-                            <p class="text-deep-brown-700">You haven't saved any posts yet.</p>
-                        </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
+            <div x-show="tab === 'comments'" style="display: none;" class="space-y-4">
+                {% for comment in comments %}{% include 'app/partials/_comment_on_profile.html' with comment=comment %}{% empty %}<p class="text-gray-500 text-center py-8">No comments yet.</p>{% endfor %}
+            </div>
+            {% if request.user == profile_user %}
+            <div x-show="tab === 'saved'" style="display: none;" class="space-y-6">
+                {% for post in saved_posts %}{% include 'app/partials/_post_card_simple.html' with post=post %}{% empty %}<p class="text-gray-500 col-span-full text-center py-8">No saved posts.</p>{% endfor %}
+            </div>
+            {% endif %}
+            <div x-show="tab === 'followers'" style="display: none;" class="bg-white rounded-lg shadow-sm p-6 space-y-4">
+                {% for user_obj in followers %}{% include 'app/partials/_user_card.html' with user_obj=user_obj %}{% empty %}<p class="text-gray-500 text-center py-8">Not followed by anyone yet.</p>{% endfor %}
+            </div>
+            <div x-show="tab === 'following'" style="display: none;" class="bg-white rounded-lg shadow-sm p-6 space-y-4">
+                {% for user_obj in following %}{% include 'app/partials/_user_card.html' with user_obj=user_obj %}{% empty %}<p class="text-gray-500 text-center py-8">Not following anyone yet.</p>{% endfor %}
             </div>
         </div>
     </div>
