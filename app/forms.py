@@ -1,6 +1,6 @@
 from django import forms
 from .models import Comment, Post, Game, PostCategory
-from tinymce.widgets import TinyMCE  # <-- Impor TinyMCE
+from tinymce.widgets import TinyMCE  # Impor TinyMCE
 
 class CommentForm(forms.ModelForm):
     class Meta:
@@ -16,7 +16,6 @@ class CommentForm(forms.ModelForm):
         labels = {
             'content': ''
         }
-
 
 class PostForm(forms.ModelForm):
     game_title = forms.ModelChoiceField(
@@ -44,8 +43,15 @@ class PostForm(forms.ModelForm):
                 'class': 'w-full text-lg px-4 py-3 border-2 border-deep-brown-200 rounded-lg bg-gray-50 focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition',
                 'placeholder': 'An interesting title...'
             }),
-            # === GANTI WIDGET INI ===
-            'content': TinyMCE(attrs={'cols': 80, 'rows': 30}),
+            # Konfigurasi TinyMCE disederhanakan, logika mention akan ditangani di template
+            'content': TinyMCE(
+                attrs={'cols': 80, 'rows': 30},
+                mce_attrs={
+                    'plugins': 'autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table paste help wordcount',
+                    'toolbar': 'undo redo | blocks | bold italic | bullist numlist | link image | removeformat',
+                    'height': 400,
+                }
+            ),
             'cover_image': forms.ClearableFileInput(attrs={
                 'class': 'text-sm text-deep-brown-700'
             })

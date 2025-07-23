@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    PostListView, VoteView, GameListView, CategoryListView, PostDetailView, 
+    PostListView, UserSearchAPIView, VoteView, GameListView, CategoryListView, PostDetailView, 
     AddCommentView, SettingsView, PostCreateView, ProfileDetailView, 
     FollowToggleView, FollowingPostListView, SavePostToggleView, 
     PostUpdateView, PostDeleteView, SuccessModalView, StartConversationView, 
@@ -29,7 +29,10 @@ urlpatterns = [
     path("categories/<slug:slug>/", CategoryDetailView.as_view(), name="category_detail"),
     path("categories/<slug:slug>/toggle_follow/", ToggleCategoryFollowView.as_view(), name="toggle_follow_category"), # <-- BARIS INI DITAMBAHKAN
 
+    path('api/user-search/', UserSearchAPIView.as_view(), name='user_search_api'),
+
     path('account/settings/', SettingsView.as_view(), name='account_settings'),
+    
     path('profile/<str:username>/', ProfileDetailView.as_view(), name='profile_detail'),
     path('profile/<str:username>/toggle_follow/', FollowToggleView.as_view(), name="toggle_follow"),
     path('success-modal/', SuccessModalView.as_view(), name='success_modal'),

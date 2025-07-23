@@ -1,10 +1,14 @@
+{% load mention_tags %}
+
 {# Template ini akan menampilkan satu komentar dan semua balasannya #}
 <div class="flex flex-col">
     <div class="flex gap-3">
         <img src="{{ comment.author.avatar.url }}" class="rounded-full h-10 w-10 flex-shrink-0 object-cover" alt="{{ comment.author.username }} avatar">
         <div class="flex-grow">
             <p class="font-bold text-sm">{{ comment.author.username }} <span class="text-xs text-deep-brown-500 font-normal">• {{ comment.created_at|timesince }} ago</span></p>
-            <div class="prose prose-sm max-w-none text-deep-brown-800 mt-1">{{ comment.content|linebreaksbr }}</div>
+            <div class="prose prose-sm max-w-none text-deep-brown-800 mt-1">
+                {{ comment.content|render_mentions|safe }}
+            </div>
 
             <!-- Tombol & Form Balasan -->
             <details class="mt-2 group">
@@ -12,12 +16,36 @@
                     <span class="group-open:hidden">Reply</span>
                     <span class="hidden group-open:inline">Cancel</span>
                 </summary>
-                <form action="{% url 'add_comment' slug=post.slug %}" method="post" class="mt-2">
-                    {% csrf_token %}
-                    <input type="hidden" name="parent_id" value="{{ comment.id }}">
-                    <textarea name="content" class="w-full text-sm p-2 border-2 rounded-lg focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition" rows="2" placeholder="Write a reply..."></textarea>
-                    <button type="submit" class="btn btn-primary btn-sm mt-2 text-xs px-4 py-1">Post Reply</button>
-                </form>
+                <!-- === WRAPPER BARU UNTUK MENTION DI BALASAN === -->
+                <div x-data="commentMentionHandler('reply-textarea-{{ comment.id }}')" class="relative">
+                    <form action="{% url 'add_comment' slug=post.slug %}" method="post" class="mt-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                        <!-- Berikan ID unik dan tambahkan event listener -->
+                        <textarea name="content" id="reply-textarea-{{ comment.id }}"
+                                  @keyup="handleKeyUp" @keydown="handleKeyDown"
+                                  class="w-full text-sm p-2 border-2 rounded-lg focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition" 
+                                  rows="2" placeholder="Write a reply..."></textarea>
+                        <button type="submit" class="btn btn-primary btn-sm mt-2 text-xs px-4 py-1">Post Reply</button>
+                    </form>
+                    <!-- Popup Autocomplete untuk Balasan -->
+                    <div x-show="open" @click.away="open = false"
+                         x-transition
+                         :style="`position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 4px;`"
+                         class="w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden p-1"
+                         x-cloak>
+                        <ul class="max-h-48 overflow-y-auto">
+                            <template x-for="(user, index) in results" :key="user.id">
+                                <li @click="selectUser(user)"
+                                    :class="{ 'bg-gray-100': index === activeIndex }"
+                                    class="flex items-center p-2 cursor-pointer hover:bg-gray-100 rounded-md">
+                                    <img :src="user.avatar" class="w-8 h-8 rounded-full object-cover mr-3">
+                                    <span class="font-semibold text-sm text-gray-800" x-text="user.text"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </div>
             </details>
         </div>
     </div>

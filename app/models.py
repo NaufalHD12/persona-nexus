@@ -205,6 +205,10 @@ class Comment(models.Model):
         related_name='replies') # Relasi ke komentar lain untuk membuat balasan berantai
     created_at = models.DateTimeField(auto_now_add=True)
     
+    def get_absolute_url(self):
+        # URL untuk komentar akan mengarah ke postingan induknya
+        return self.post.get_absolute_url() + f'#comment-{self.id}'
+    
     def __str__(self):
         return f'Comment by {self.author.username} on {self.post.title}'
     
@@ -257,6 +261,7 @@ class Notification(models.Model):
         NEW_REPLY = 'reply', 'New Reply'
         NEW_FOLLOWER = 'follower', 'New Follower'
         POST_SAVE = 'save', 'Post Save'
+        MENTION = 'mention', 'Mention'
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="actions")
@@ -272,25 +277,30 @@ class Notification(models.Model):
         ordering = ['-timestamp']
 
     def __str__(self):
-        return f"{self.actor} {self.verb} {self.action_object or ''}"
+        if self.action_object:
+            return f"{self.actor} {self.verb} {self.action_object}"
+        return f"{self.actor} {self.verb}"
 
-    # ==> TAMBAHKAN METODE INI <==
     def get_absolute_url(self):
         """
         Membuat URL yang benar berdasarkan tipe notifikasi.
         """
-        # Jika notifikasi berhubungan dengan sebuah Post
-        if self.notification_type in [
-            self.NotificationType.POST_VOTE, 
-            self.NotificationType.NEW_COMMENT, 
-            self.NotificationType.NEW_REPLY, 
-            self.NotificationType.POST_SAVE
-        ] and self.action_object:
-            return reverse('post_detail', kwargs={'slug': self.action_object.slug})
-        
+        # Jika notifikasi berhubungan dengan objek yang memiliki get_absolute_url (Post, Comment)
+        if hasattr(self.action_object, 'get_absolute_url'):
+            # === LOGIKA BARU UNTUK MENTION ===
+            if self.notification_type == self.NotificationType.MENTION:
+                # Untuk mention, action_object adalah Post atau Comment itu sendiri
+                return self.action_object.get_absolute_url()
+            # Logika lama untuk vote, komentar, balasan, dll.
+            # Jika action_object adalah Comment, kita ingin link ke Post-nya
+            elif isinstance(self.action_object, Comment):
+                return self.action_object.post.get_absolute_url()
+            else:
+                return self.action_object.get_absolute_url()
+
         # Jika notifikasi adalah tentang follower baru
         elif self.notification_type == self.NotificationType.NEW_FOLLOWER and self.actor:
             return reverse('profile_detail', kwargs={'username': self.actor.username})
         
-        # Fallback jika tidak ada URL spesifik (misalnya, ke halaman notifikasi utama)
+        # Fallback jika tidak ada URL spesifik
         return reverse('notification_list')

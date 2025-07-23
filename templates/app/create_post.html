@@ -1,22 +1,24 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block head_title %}Create New Post{% endblock head_title %}
+
 {% block page_css %}
     {{ form.media.css }}
 {% endblock %}
 
-{% block head_title %}Create New Post{% endblock head_title %}
-
 {% block body %}
 <main class="container mx-auto p-4 md:p-6 lg:p-8">
     <div class="max-w-3xl mx-auto py-8 px-4">
-        <div class="bg-white rounded-lg shadow-md p-8">
-            <h1 class="text-3xl font-bold text-deep-brown-800 mb-6 border-b pb-4">Create a New Post</h1>
-            <form method="post" enctype="multipart/form-data" novalidate>
-                {% csrf_token %}
+        <!-- Alpine.js component untuk menangani mention -->
+        <div x-data="mentionHandler()">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <h1 class="text-3xl font-bold text-deep-brown-800 mb-6 border-b pb-4">Create a New Post</h1>
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
 
-                <div class="space-y-6">
-                    <div>
+                    <div class="space-y-6">
+                        <div>
                         <label for="{{ form.title.id_for_label }}"
                             class="block text-sm font-semibold text-deep-brown-700 mb-2">Title</label>
                         {{ form.title }}
@@ -44,17 +46,14 @@
                             {% endif %}
                         </div>
                     </div>
-
-                    <div>
-                        <label for="{{ form.content.id_for_label }}"
-                            class="block text-sm font-semibold text-deep-brown-700 mb-2">Content</label>
-                        {{ form.content }}
-                        {% if form.content.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.content.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
+                        <div>
+                            <label for="{{ form.content.id_for_label }}" class="block text-sm font-semibold text-deep-brown-700 mb-2">Content</label>
+                            {{ form.content }}
+                            {% if form.content.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.content.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
                         <label for="{{ form.cover_image.id_for_label }}"
                             class="block text-sm font-semibold text-deep-brown-700 mb-2">Cover Image (Optional)</label>
                         {{ form.cover_image }}
@@ -62,22 +61,133 @@
                         <p class="text-red-500 text-xs mt-1">{{ form.cover_image.errors.0 }}</p>
                         {% endif %}
                     </div>
-                </div>
+                    </div>
 
-                <div class="mt-8 flex justify-end">
-                    <a href="{% url 'home' %}"
-                        class="text-gray-600 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 mr-4">Cancel</a>
-                    <button type="submit" class="btn btn-primary">
-                        Submit Post
-                    </button>
-                </div>
-            </form>
+                    <div class="mt-8 flex justify-end">
+                        <a href="{% url 'home' %}" class="btn btn-ghost mr-4">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Submit Post</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Popup Autocomplete Mention Kustom -->
+            <div x-show="open" @click.away="open = false"
+                 x-ref="popup"
+                 x-transition
+                 :style="`position: fixed; top: ${position.top}px; left: ${position.left}px; z-index: 1000;`"
+                 class="w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden p-1"
+                 x-cloak>
+                <ul class="max-h-60 overflow-y-auto">
+                    <template x-for="(user, index) in results" :key="user.id">
+                        <li @click="selectUser(user)"
+                            :class="{ 'bg-gray-100': index === activeIndex }"
+                            class="flex items-center p-2 cursor-pointer hover:bg-gray-100 rounded-md">
+                            <img :src="user.avatar" class="w-8 h-8 rounded-full object-cover mr-3">
+                            <span class="font-semibold text-sm text-gray-800" x-text="user.text"></span>
+                        </li>
+                    </template>
+                    <template x-if="results.length === 0 && search.length > 1">
+                        <li class="p-2 text-sm text-gray-500">No users found.</li>
+                    </template>
+                </ul>
+            </div>
         </div>
     </div>
 </main>
 {% endblock body %}
 
-
 {% block page_js %}
     {{ form.media.js }}
+    <script>
+    function mentionHandler() {
+        return {
+            open: false,
+            search: '',
+            results: [],
+            position: { top: 0, left: 0 },
+            activeIndex: -1,
+            editorInstance: null,
+            mentionStartPos: null,
+
+            init() {
+                const checkEditorInterval = setInterval(() => {
+                    const editor = tinymce.get('id_content');
+                    if (editor) {
+                        clearInterval(checkEditorInterval);
+                        this.editorInstance = editor;
+                        
+                        editor.on('keyup', (e) => this.handleKeyUp(e));
+                        editor.on('keydown', (e) => this.handleKeyDown(e));
+                        editor.on('click', () => this.open = false);
+                        console.log('Mention handler successfully attached to TinyMCE.');
+                    }
+                }, 100);
+            },
+
+            async handleKeyUp(e) {
+                if (!this.editorInstance) return;
+                const content = this.editorInstance.selection.getRng().startContainer.textContent || '';
+                const cursorPosition = this.editorInstance.selection.getRng().startOffset;
+                
+                const mentionMatch = content.substring(0, cursorPosition).match(/@(\w+)$/);
+
+                if (mentionMatch) {
+                    this.search = mentionMatch[1];
+                    this.mentionStartPos = cursorPosition - this.search.length - 1;
+                    
+                    const rect = this.editorInstance.selection.getRng().getClientRects()[0];
+                    if (!rect) return;
+                    
+                    const iframeRect = this.editorInstance.getContainer().querySelector('iframe').getBoundingClientRect();
+                    const popupEl = this.$refs.popup;
+
+                    this.position.top = window.scrollY + iframeRect.top + rect.top - popupEl.offsetHeight - 4;
+                    this.position.left = window.scrollX + iframeRect.left + rect.left;
+
+                    if (this.search.length >= 1) {
+                        const response = await fetch(`/feed/api/user-search/?q=${this.search}`);
+                        this.results = await response.json();
+                        this.open = this.results.length > 0;
+                        this.activeIndex = 0;
+                    } else {
+                        this.open = false;
+                    }
+                } else {
+                    this.open = false;
+                }
+            },
+
+            handleKeyDown(e) {
+                if (!this.open) return;
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    this.activeIndex = (this.activeIndex + 1) % this.results.length;
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    this.activeIndex = (this.activeIndex - 1 + this.results.length) % this.results.length;
+                } else if (e.key === 'Enter' || e.key === 'Tab') {
+                    e.preventDefault();
+                    if (this.results[this.activeIndex]) {
+                        this.selectUser(this.results[this.activeIndex]);
+                    }
+                } else if (e.key === 'Escape') {
+                    this.open = false;
+                }
+            },
+
+            selectUser(user) {
+                const rng = this.editorInstance.selection.getRng();
+                rng.setStart(rng.startContainer, this.mentionStartPos);
+                rng.setEnd(rng.startContainer, this.mentionStartPos + this.search.length + 1);
+                this.editorInstance.selection.setRng(rng);
+                // === PERBAIKAN: Gunakan user.id, bukan user.value ===
+                this.editorInstance.insertContent(`@${user.id}&nbsp;`);
+                this.open = false;
+                this.results = [];
+                this.search = '';
+                this.activeIndex = -1;
+            },
+        }
+    }
+    </script>
 {% endblock %}

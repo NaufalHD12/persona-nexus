@@ -710,3 +710,22 @@ class LoadNotificationDropdownView(LoginRequiredMixin, View):
             'app/partials/_notification_dropdown_content.html', 
             {'latest_notifications': latest_notifications}
         )
+
+
+class UserSearchAPIView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get('q', '')
+        if len(query) < 2:
+            return JsonResponse([], safe=False)
+
+        users = UserProfile.objects.filter(username__istartswith=query).exclude(pk=request.user.pk)[:10]
+        
+        results = [
+            {
+                'id': user.username,
+                'text': user.username,
+                'avatar': user.avatar.url if user.avatar else None
+            }
+            for user in users
+        ]
+        return JsonResponse(results, safe=False)

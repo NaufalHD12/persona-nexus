@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load mention_tags %}
 
 {% block head_title %}- {{ post.title }}{% endblock head_title %}
 
@@ -56,7 +57,7 @@
 
                     <!-- Post Content -->
                     <div class="prose max-w-none mt-6 text-deep-brown-700">
-                        {{ post.content|safe }}
+                        {{ post.content|render_mentions|safe }}
                     </div>
 
                     <!-- Action Buttons -->
@@ -88,18 +89,44 @@
                 </div>
             </article>
 
-            <!-- Comment Section -->
-            <div id="comment-section" class="bg-white rounded-lg shadow-sm mt-6 p-6">
+            <!-- Comment Section with Mention Autocomplete -->
+            <div id="comment-section" class="bg-white rounded-lg shadow-sm mt-6 p-6" x-data="commentMentionHandler('comment-textarea')">
                 <h2 class="text-xl font-bold text-deep-brown-800 mb-4">Comments ({{ post.comments.count }})</h2>
                 
                 <!-- Comment Form -->
-                <form id="comment-form" method="post" action="{% url 'add_comment' post.slug %}" class="mb-6">
+                <form id="comment-form" method="post" action="{% url 'add_comment' post.slug %}" class="mb-6 relative">
                     {% csrf_token %}
-                    {{ comment_form.content }}
+                    <!-- Berikan ID unik dan tambahkan event listener -->
+                    <textarea name="{{ comment_form.content.name }}" id="comment-textarea" 
+                              @keyup="handleKeyUp" @keydown="handleKeyDown"
+                              class="w-full p-3 border-2 border-deep-brown-200 rounded-lg focus:outline-none focus:border-primary-accent focus:ring-1 focus:ring-primary-accent transition" 
+                              rows="4" placeholder="What are your thoughts? Use @ to mention users."></textarea>
+                    
                     <div class="flex justify-end mt-2">
                         <button type="submit" class="btn btn-primary">Post Comment</button>
                     </div>
                 </form>
+
+                <!-- Popup Autocomplete Mention Kustom untuk Komentar -->
+                <div x-show="open" @click.away="open = false"
+                    x-transition
+                    :style="`position: absolute; top: ${position.top - 40}px; left: ${position.left}px; z-index: 50;`"
+                    class="w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden p-2"
+                    x-cloak>
+                    <ul class="max-h-48 overflow-y-auto">
+                        <template x-for="(user, index) in results" :key="user.id">
+                            <li @click="selectUser(user)"
+                                :class="{ 'bg-gray-100': index === activeIndex }"
+                                class="flex items-center p-2 cursor-pointer hover:bg-gray-100">
+                                <img :src="user.avatar" class="w-8 h-8 rounded-full object-cover mr-3">
+                                <span class="font-semibold text-sm text-gray-800" x-text="user.text"></span>
+                            </li>
+                        </template>
+                        <template x-if="results.length === 0 && search.length > 1">
+                            <li class="p-2 text-sm text-gray-500">No users found.</li>
+                        </template>
+                    </ul>
+                </div>
 
                 <!-- Comment List -->
                 <div class="space-y-6">
@@ -203,5 +230,101 @@
             });
         });
     });
+
+    function commentMentionHandler(textareaId) {
+        return {
+            open: false,
+            search: '',
+            results: [],
+            position: { top: 0, left: 0 },
+            activeIndex: -1,
+            textarea: null,
+            mentionStartPos: null,
+
+            init() {
+                this.textarea = document.getElementById(textareaId);
+                if (!this.textarea) {
+                    console.error(`Textarea with ID ${textareaId} not found`);
+                }
+            },
+
+            async handleKeyUp(e) {
+                if (!this.textarea) return;
+                const text = this.textarea.value;
+                const cursorPosition = this.textarea.selectionStart;
+                
+                const mentionMatch = text.substring(0, cursorPosition).match(/@(\w+)$/);
+
+                if (mentionMatch) {
+                    this.search = mentionMatch[1];
+                    this.mentionStartPos = cursorPosition - this.search.length - 1;
+                    
+                    const rect = this.textarea.getBoundingClientRect();
+                    const textareaStyle = window.getComputedStyle(this.textarea);
+                    const lineHeight = parseInt(textareaStyle.lineHeight);
+                    const paddingTop = parseInt(textareaStyle.paddingTop);
+                    
+                    // Calculate position relative to cursor
+                    const lines = text.substring(0, cursorPosition).split('\n');
+                    const currentLine = lines[lines.length - 1];
+                    const currentLineLength = currentLine.length;
+                    
+                    // Estimate cursor position
+                    const charWidth = 8; // Approximate character width
+                    const cursorLeft = rect.left + (currentLineLength * charWidth);
+                    
+                    this.position.top = window.scrollY + rect.top + paddingTop + lineHeight;
+                    this.position.left = cursorLeft;
+
+                    if (this.search.length >= 1) {
+                        const response = await fetch(`/feed/api/user-search/?q=${this.search}`);
+                        this.results = await response.json();
+                        this.open = this.results.length > 0;
+                        this.activeIndex = 0;
+                    } else {
+                        this.open = false;
+                    }
+                } else {
+                    this.open = false;
+                }
+            },
+
+            handleKeyDown(e) {
+                if (!this.open) return;
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    this.activeIndex = (this.activeIndex + 1) % this.results.length;
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    this.activeIndex = (this.activeIndex - 1 + this.results.length) % this.results.length;
+                } else if (e.key === 'Enter' || e.key === 'Tab') {
+                    e.preventDefault();
+                    if (this.results[this.activeIndex]) {
+                        this.selectUser(this.results[this.activeIndex]);
+                    }
+                } else if (e.key === 'Escape') {
+                    this.open = false;
+                }
+            },
+
+            selectUser(user) {
+                const text = this.textarea.value;
+                const before = text.substring(0, this.mentionStartPos);
+                const after = text.substring(this.mentionStartPos + this.search.length + 1);
+                
+                this.textarea.value = `${before}@${user.id} ${after}`;
+                
+                // Pindahkan cursor setelah mention
+                const newCursorPos = (before + `@${user.id} `).length;
+                this.textarea.selectionStart = this.textarea.selectionEnd = newCursorPos;
+                
+                this.open = false;
+                this.results = [];
+                this.search = '';
+                this.activeIndex = -1;
+                this.textarea.focus();
+            },
+        }
+    }
 </script>
 {% endblock page_js %}
