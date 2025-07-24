@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    PostListView, UserSearchAPIView, VoteView, GameListView, CategoryListView, PostDetailView, 
+    CreateReportView, PostListView, UserSearchAPIView, VoteView, GameListView, CategoryListView, PostDetailView, 
     AddCommentView, SettingsView, PostCreateView, ProfileDetailView, 
     FollowToggleView, FollowingPostListView, SavePostToggleView, 
     PostUpdateView, PostDeleteView, SuccessModalView, StartConversationView, 
@@ -31,6 +31,8 @@ urlpatterns = [
 
     path('api/user-search/', UserSearchAPIView.as_view(), name='user_search_api'),
 
+    path('report/<str:model_name>/<int:pk>/', CreateReportView.as_view(), name='create_report'),
+    
     path('account/settings/', SettingsView.as_view(), name='account_settings'),
     
     path('profile/<str:username>/', ProfileDetailView.as_view(), name='profile_detail'),

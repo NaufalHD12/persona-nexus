@@ -1,0 +1,35 @@
+<div class="flex items-center gap-4">
+    <!-- Dropdown untuk mengubah status -->
+    <form hx-post="{% url 'admin_update_report_status' pk=report.pk %}"
+          hx-target="#report-actions-{{ report.pk }}"
+          hx-swap="innerHTML"
+          hx-trigger="change" 
+          class="flex items-center gap-2 text-sm">
+        {% csrf_token %}
+        <label for="status-{{ report.pk }}" class="font-semibold">Status:</label>
+        <select name="status" id="status-{{ report.pk }}" class="text-xs rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+            {% for value, display in report.ReportStatus.choices %}
+                <option value="{{ value }}" {% if report.status == value %}selected{% endif %}>{{ display }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <!-- Tombol untuk menghapus konten (jika belum dihapus) -->
+    {% if report.content_object %}
+        <div x-data="{ confirmDelete: false }">
+            <button @click="confirmDelete = true" x-show="!confirmDelete" class="btn btn-danger btn-sm gap-2">
+                <i data-feather="trash-2" class="w-4 h-4"></i> Delete Content
+            </button>
+            <div x-show="confirmDelete" x-cloak class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-red-700">Sure?</span>
+                <button hx-post="{% url 'admin_delete_content' pk=report.pk %}"
+                        hx-target="#report-card-{{ report.pk }}"
+                        hx-swap="outerHTML"
+                        class="btn btn-danger btn-sm">Yes</button>
+                <button @click="confirmDelete = false" class="btn btn-ghost btn-sm">No</button>
+            </div>
+        </div>
+    {% else %}
+        <span class="text-sm text-gray-400 italic font-semibold">Content Deleted</span>
+    {% endif %}
+</div>

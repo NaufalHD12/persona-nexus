@@ -1,17 +1,19 @@
 from django.shortcuts import redirect, get_object_or_404, render
 from django.http import JsonResponse, HttpResponse
 from django.views import View
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, AccessMixin
 from django.contrib.contenttypes.models import ContentType
-from .models import Notification, Post, Game, Vote, PostCategory, Comment, UserProfile, Conversation, Message
+from .models import Notification, Post, Game, Report, Vote, PostCategory, Comment, UserProfile, Conversation, Message
 from django.views.generic import CreateView, ListView, UpdateView, DeleteView, DetailView, TemplateView
-from django.db.models.query import QuerySet
 from django.db.models import OuterRef, Subquery, Count, Q, Sum
-from .forms import CommentForm, PostForm, MessageForm
-from django.urls import reverse_lazy
+from .forms import AdminCategoryForm, AdminGameForm, CommentForm, PostForm, MessageForm, ReportForm
+from django.urls import reverse, reverse_lazy
 from friendship.models import Follow
 from django.contrib import messages
-from django import forms
+from django.utils import timezone
+from datetime import timedelta
+import json
+from django.db.models.functions import TruncDay
 
 
 class PostListView(LoginRequiredMixin, ListView):
@@ -769,3 +771,333 @@ class UserSearchAPIView(LoginRequiredMixin, View):
             for user in users
         ]
         return JsonResponse(results, safe=False)
+    
+
+class CreateReportView(LoginRequiredMixin, View):
+    def get(self, request, model_name, pk):
+        """Menampilkan modal formulir laporan."""
+        try:
+            model = ContentType.objects.get(model=model_name).model_class()
+            content_object = get_object_or_404(model, pk=pk)
+            form = ReportForm()
+            
+            context = {
+                'form': form,
+                'content_object': content_object,
+                'model_name': model_name,
+                'pk': pk
+            }
+            return render(request, 'app/partials/_report_modal.html', context)
+        except (ContentType.DoesNotExist, model.DoesNotExist):
+            return HttpResponse("Invalid content type or object.", status=404)
+
+    def post(self, request, model_name, pk):
+        """Memproses pengiriman formulir laporan."""
+        try:
+            model = ContentType.objects.get(model=model_name).model_class()
+            content_object = get_object_or_404(model, pk=pk)
+            form = ReportForm(request.POST)
+
+            if form.is_valid():
+                report = form.save(commit=False)
+                report.reporter = request.user
+                report.content_object = content_object
+                report.save()
+                return render(request, 'app/partials/_report_success.html')
+            
+            # Jika form tidak valid, tampilkan kembali modal dengan error
+            context = {
+                'form': form,
+                'content_object': content_object,
+                'model_name': model_name,
+                'pk': pk
+            }
+            return render(request, 'app/partials/_report_modal.html', context)
+        except (ContentType.DoesNotExist, model.DoesNotExist):
+            return HttpResponse("Invalid content type or object.", status=404)
+        
+
+class StaffRequiredMixin(AccessMixin):
+    """Memastikan pengguna yang login adalah anggota staf."""
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            return self.handle_no_permission()
+        return super().dispatch(request, *args, **kwargs)
+
+# === VIEW UNTUK HALAMAN ADMIN KUSTOM ===
+
+class AdminDashboardView(StaffRequiredMixin, TemplateView):
+    template_name = 'management/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['total_users'] = UserProfile.objects.count()
+        context['total_posts'] = Post.objects.count()
+        context['total_comments'] = Comment.objects.count()
+        context['pending_reports'] = Report.objects.filter(status=Report.ReportStatus.PENDING).count()
+        context['recent_reports'] = Report.objects.order_by('-created_at')[:5]
+        return context
+
+class ReportListView(StaffRequiredMixin, ListView):
+    model = Report
+    template_name = 'management/report_list.html'
+    context_object_name = 'reports'
+    paginate_by = 15
+
+    def get_queryset(self):
+        queryset = Report.objects.select_related('reporter', 'content_type').order_by('-created_at')
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['status_choices'] = Report.ReportStatus.choices
+        return context
+
+class UpdateReportStatusView(StaffRequiredMixin, View):
+    """Menangani pembaruan status laporan melalui HTMX."""
+    def post(self, request, pk):
+        report = get_object_or_404(Report, pk=pk)
+        new_status = request.POST.get('status')
+        if new_status in Report.ReportStatus.values:
+            report.status = new_status
+            report.save(update_fields=['status'])
+        
+        # Kembalikan hanya bagian tombol aksi yang diperbarui
+        return render(request, 'management/partials/_report_actions.html', {'report': report})
+
+class AdminDeleteContentView(StaffRequiredMixin, View):
+    """Menangani penghapusan konten yang dilaporkan."""
+    def post(self, request, pk):
+        report = get_object_or_404(Report, pk=pk)
+        content_object = report.content_object
+        
+        if content_object:
+            content_object.delete()
+            report.status = Report.ReportStatus.REVIEWED_ACTION_TAKEN
+            report.save(update_fields=['status'])
+        
+        # Kembalikan seluruh KARTU yang diperbarui
+        return render(request, 'management/partials/_report_card.html', {'report': report})
+    
+
+class UserListView(StaffRequiredMixin, ListView):
+    model = UserProfile
+    template_name = 'management/user_list.html'
+    context_object_name = 'users'
+    paginate_by = 20
+
+    # === TAMBAHKAN METODE INI UNTUK MENANGANI HTMX ===
+    def get_template_names(self):
+        if self.request.htmx:
+            return ['management/partials/_user_list_body.html']
+        return [self.template_name]
+
+    def get_queryset(self):
+        queryset = UserProfile.objects.annotate(
+            post_count=Count('posts')
+        ).order_by('-date_joined')
+        
+        query = self.request.GET.get('q')
+        if query:
+            queryset = queryset.filter(
+                Q(username__icontains=query) | Q(email__icontains=query)
+            )
+        return queryset
+
+class UpdateUserStatusView(StaffRequiredMixin, View):
+    """Menangani pembaruan status is_active dan is_staff untuk pengguna."""
+    def post(self, request, pk):
+        user = get_object_or_404(UserProfile, pk=pk)
+        
+        # Jangan izinkan admin menonaktifkan dirinya sendiri
+        if user == request.user:
+            # Anda bisa menambahkan pesan error di sini jika mau
+            return render(request, 'management/partials/_user_row.html', {'user': user})
+
+        action = request.POST.get('action')
+        
+        if action == 'toggle_active':
+            user.is_active = not user.is_active
+        elif action == 'toggle_staff':
+            user.is_staff = not user.is_staff
+        
+        user.save()
+        
+        # Render ulang baris pengguna dengan status terbaru
+        return render(request, 'management/partials/_user_row.html', {'user': user})
+    
+
+# --- Game Management ---
+class AdminGameListView(StaffRequiredMixin, ListView):
+    model = Game
+    template_name = 'management/game_list.html'
+    context_object_name = 'games'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return Game.objects.all().order_by('title')
+
+class AdminGameCreateView(StaffRequiredMixin, View):
+    def get(self, request):
+        form = AdminGameForm()
+        return render(request, 'management/partials/_game_form.html', {'form': form})
+
+    def post(self, request):
+        form = AdminGameForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            games = Game.objects.all().order_by('-pk')
+            response = render(request, 'management/partials/_game_list_body.html', {'games': games})
+            response['HX-Trigger'] = 'close-modal'  # Kirim trigger untuk menutup modal
+            return response
+        return render(request, 'management/partials/_game_form.html', {'form': form})
+
+class AdminGameUpdateView(StaffRequiredMixin, View):
+    def get(self, request, pk):
+        game = get_object_or_404(Game, pk=pk)
+        form = AdminGameForm(instance=game)
+        return render(request, 'management/partials/_game_form.html', {'form': form, 'game': game})
+
+    def post(self, request, pk):
+        game = get_object_or_404(Game, pk=pk)
+        form = AdminGameForm(request.POST, request.FILES, instance=game)
+        if form.is_valid():
+            form.save()
+            response = render(request, 'management/partials/_game_row.html', {'game': game})
+            response['HX-Trigger'] = 'close-modal'  # Kirim trigger untuk menutup modal
+            return response
+        return render(request, 'management/partials/_game_form.html', {'form': form, 'game': game})
+
+class AdminGameDeleteView(StaffRequiredMixin, View):
+    def get(self, request, pk):
+        game = get_object_or_404(Game, pk=pk)
+        return render(request, 'management/partials/_game_confirm_delete.html', {
+            'item': game,
+            'delete_url': reverse('admin_game_delete', kwargs={'pk': pk})
+        })
+
+    def post(self, request, pk):
+        game = get_object_or_404(Game, pk=pk)
+        game.delete()
+        response = HttpResponse()
+        response['HX-Refresh'] = 'true'
+        return response
+
+# --- Category Management ---
+class AdminCategoryListView(StaffRequiredMixin, ListView):
+    model = PostCategory
+    template_name = 'management/category_list.html'
+    context_object_name = 'categories'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return PostCategory.objects.all().order_by('name')
+
+class AdminCategoryCreateView(StaffRequiredMixin, View):
+    def get(self, request):
+        form = AdminCategoryForm()
+        return render(request, 'management/partials/_category_form.html', {'form': form})
+
+    def post(self, request):
+        form = AdminCategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            categories = PostCategory.objects.all().order_by('-pk')
+            response = render(request, 'management/partials/_category_list_body.html', {'categories': categories})
+            response['HX-Trigger'] = 'close-modal'  # Kirim trigger untuk menutup modal
+            return response
+        return render(request, 'management/partials/_category_form.html', {'form': form})
+
+class AdminCategoryUpdateView(StaffRequiredMixin, View):
+    def get(self, request, pk):
+        category = get_object_or_404(PostCategory, pk=pk)
+        form = AdminCategoryForm(instance=category)
+        return render(request, 'management/partials/_category_form.html', {'form': form, 'category': category})
+
+    def post(self, request, pk):
+        category = get_object_or_404(PostCategory, pk=pk)
+        form = AdminCategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            response = render(request, 'management/partials/_category_row.html', {'category': category})
+            response['HX-Trigger'] = 'close-modal'  # Kirim trigger untuk menutup modal
+            return response
+        return render(request, 'management/partials/_category_form.html', {'form': form, 'category': category})
+
+class AdminCategoryDeleteView(StaffRequiredMixin, View):
+    def get(self, request, pk):
+        category = get_object_or_404(PostCategory, pk=pk)
+        return render(request, 'management/partials/_category_confirm_delete.html', {
+            'item': category,
+            'delete_url': reverse('admin_category_delete', kwargs={'pk': pk})
+        })
+
+    def post(self, request, pk):
+        category = get_object_or_404(PostCategory, pk=pk)
+        category.delete()
+        response = HttpResponse()
+        response['HX-Refresh'] = 'true'  # Ini yang akan memicu refresh
+        return response
+
+
+class AdminAnalyticsView(StaffRequiredMixin, TemplateView):
+    template_name = 'management/analytics.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # --- Data untuk 30 hari terakhir ---
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        date_labels = [(thirty_days_ago + timedelta(days=i)).strftime('%b %d') for i in range(31)]
+
+        # 1. Pertumbuhan Pengguna
+        user_registrations = (
+            UserProfile.objects
+            .filter(date_joined__gte=thirty_days_ago)
+            .annotate(day=TruncDay('date_joined'))
+            .values('day')
+            .annotate(count=Count('id'))
+            .order_by('day')
+        )
+        
+        user_data = {item['day'].strftime('%b %d'): item['count'] for item in user_registrations}
+        user_growth_data = [user_data.get(day, 0) for day in date_labels]
+
+        # 2. Aktivitas Konten
+        post_creations = (
+            Post.objects
+            .filter(created_at__gte=thirty_days_ago)
+            .annotate(day=TruncDay('created_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+            .order_by('day')
+        )
+        comment_creations = (
+            Comment.objects
+            .filter(created_at__gte=thirty_days_ago)
+            .annotate(day=TruncDay('created_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+            .order_by('day')
+        )
+
+        post_data = {item['day'].strftime('%b %d'): item['count'] for item in post_creations}
+        comment_data = {item['day'].strftime('%b %d'): item['count'] for item in comment_creations}
+        
+        post_activity_data = [post_data.get(day, 0) for day in date_labels]
+        comment_activity_data = [comment_data.get(day, 0) for day in date_labels]
+
+        # 3. Papan Peringkat
+        context['top_users_by_karma'] = UserProfile.objects.order_by('-karma')[:5]
+        context['top_posts_by_votes'] = Post.objects.annotate(score=Sum('votes__value')).filter(score__gt=0).order_by('-score')[:5]
+
+        # Kirim data ke template dalam format JSON
+        context['chart_labels'] = json.dumps(date_labels)
+        context['user_growth_data'] = json.dumps(user_growth_data)
+        context['post_activity_data'] = json.dumps(post_activity_data)
+        context['comment_activity_data'] = json.dumps(comment_activity_data)
+        
+        return context

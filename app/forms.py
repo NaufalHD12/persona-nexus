@@ -1,5 +1,5 @@
 from django import forms
-from .models import Comment, Post, Game, PostCategory
+from .models import Comment, Post, Game, PostCategory, Report
 from tinymce.widgets import TinyMCE  # Impor TinyMCE
 
 class CommentForm(forms.ModelForm):
@@ -66,3 +66,39 @@ class MessageForm(forms.Form):
             'placeholder': 'Type a message...'
         })
     )
+
+
+class ReportForm(forms.ModelForm):
+    class Meta:
+        model = Report
+        fields = ['reason', 'notes']
+        widgets = {
+            'notes': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Provide additional details (optional)'}),
+        }
+        
+
+class AdminGameForm(forms.ModelForm):
+    # === PERBAIKAN: Jadikan slug tidak wajib diisi ===
+    slug = forms.SlugField(required=False, help_text="Leave blank to auto-generate from the title.")
+
+    class Meta:
+        model = Game
+        fields = ['title', 'description', 'slug', 'game_logo']
+        widgets = {
+            'title': forms.TextInput(attrs={'placeholder': 'e.g., Persona 5 Royal'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'placeholder': 'A brief description of the game.'}),
+            'slug': forms.TextInput(attrs={'placeholder': 'auto-generated if left blank'}),
+        }
+
+class AdminCategoryForm(forms.ModelForm):
+    # === PERBAIKAN: Jadikan slug tidak wajib diisi ===
+    slug = forms.SlugField(required=False, help_text="Leave blank to auto-generate from the name.")
+    
+    class Meta:
+        model = PostCategory
+        fields = ['name', 'description', 'slug']
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'e.g., Fan Art & Cosplay'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'placeholder': 'A brief description of the category.'}),
+            'slug': forms.TextInput(attrs={'placeholder': 'auto-generated if left blank'}),
+        }

@@ -44,12 +44,20 @@ class PostCategory(models.Model):
 class Game(models.Model):
     title = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, default="")
-    slug = models.SlugField(max_length=100, unique=True)
-    # Field baru untuk logo game
+    slug = models.SlugField(max_length=100, unique=True, blank=True) # blank=True ditambahkan
     game_logo = models.ImageField(upload_to='game_logos/', blank=True, null=True)
     
     def __str__(self):
         return self.title
+    
+    # === METODE SAVE DITAMBAHKAN UNTUK AUTO-SLUG ===
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('game_detail', kwargs={'slug': self.slug})
     
 
 class Vote(models.Model):
@@ -181,6 +189,9 @@ class UserProfile(AbstractUser):
     def __str__(self):
         return self.username
     
+    def get_absolute_url(self):
+        return reverse('profile_detail', kwargs={'username': self.username})
+
     @property
     def avatar_url(self):
         if self.avatar and hasattr(self.avatar, 'url'):
@@ -332,3 +343,30 @@ class Notification(models.Model):
             return reverse('profile_detail', kwargs={'username': self.actor.username})
         
         return reverse('notification_list')
+
+
+class Report(models.Model):
+    class ReportReason(models.TextChoices):
+        SPAM = 'SPAM', 'Spam or Misleading'
+        HARASSMENT = 'HARASSMENT', 'Harassment or Hate Speech'
+        INAPPROPRIATE = 'INAPPROPRIATE', 'Inappropriate Content'
+        OTHER = 'OTHER', 'Other'
+
+    class ReportStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        REVIEWED_ACTION_TAKEN = 'ACTION_TAKEN', 'Reviewed - Action Taken'
+        REVIEWED_NO_ACTION = 'NO_ACTION', 'Reviewed - No Action'
+
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reports_made')
+    reason = models.CharField(max_length=20, choices=ReportReason.choices)
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=ReportStatus.choices, default=ReportStatus.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Generic Foreign Key untuk menunjuk ke Post atau Comment
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    def __str__(self):
+        return f"Report by {self.reporter.username} on {self.content_type.model} ({self.object_id})"

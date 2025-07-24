@@ -130,6 +130,25 @@ files = [
 ]
 
 [[package]]
+name = "crispy-tailwind"
+version = "1.0.3"
+description = "Tailwind CSS for Django Crispy Forms"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "crispy-tailwind-1.0.3.tar.gz", hash = "sha256:2bc9f616d406e4b003f25d46fcb0079f1c2522719d97adb107667271d849459a"},
+    {file = "crispy_tailwind-1.0.3-py3-none-any.whl", hash = "sha256:31427f66b1c4fd0d6fb040f4197cfb97d104cdbe7641ea2dea940c0057c4db4b"},
+]
+
+[package.dependencies]
+django = ">=4.2"
+django-crispy-forms = ">=2.0"
+
+[package.extras]
+test = ["pytest", "pytest-django"]
+
+[[package]]
 name = "django"
 version = "5.2.2"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
@@ -209,6 +228,21 @@ files = [
 
 [package.dependencies]
 asgiref = ">=3.6"
+django = ">=4.2"
+
+[[package]]
+name = "django-crispy-forms"
+version = "2.4"
+description = "Best way to have Django DRY forms"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "django_crispy_forms-2.4-py3-none-any.whl", hash = "sha256:5a4b99876cfb1bdd3e47727731b6d4197c51c0da502befbfbec6a93010b02030"},
+    {file = "django_crispy_forms-2.4.tar.gz", hash = "sha256:915e1ffdeb2987d78b33fabfeff8e5203c8776aa910a3a659a2c514ca125f3bd"},
+]
+
+[package.dependencies]
 django = ">=4.2"
 
 [[package]]
@@ -494,4 +528,4 @@ brotli = ["brotli"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13"
-content-hash = "4471d6cbb97b58256a0c9ab85823d45148afcebf576d4b2c97b99efeb00d1ac0"
+content-hash = "2fdc433045bd92f6eda738ca8666507302daae2915c12d29ca535db07411a9a4"

@@ -18,7 +18,9 @@ dependencies = [
     "psycopg (>=3.2.9,<4.0.0)",
     "django-browser-reload (>=1.18.0,<2.0.0)",
     "django-htmx (>=1.23.0,<2.0.0)",
-    "django-tinymce (>=4.1.0,<5.0.0)"
+    "django-tinymce (>=4.1.0,<5.0.0)",
+    "django-crispy-forms (>=2.4,<3.0)",
+    "crispy-tailwind (>=1.0.3,<2.0.0)"
 ]
 
 [tool.poetry]

@@ -1,0 +1,27 @@
+{% load crispy_forms_tags %}
+<div x-data="{ open: true }" x-show="open" @keydown.escape.window="open = false" x-cloak>
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div @click.away="open = false" 
+             class="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-8"
+             x-show="open" 
+             x-transition>
+
+            <h2 class="text-3xl font-bold font-poppins text-deep-brown">Report Content</h2>
+            <p class="mt-2 text-deep-brown-700">
+                You are reporting a {{ model_name }}. Please select a reason below.
+            </p>
+            
+            <form hx-post="{% url 'create_report' model_name=model_name pk=pk %}" 
+                  hx-target="#modal-container" 
+                  hx-swap="innerHTML"
+                  class="mt-6">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <div class="flex justify-end gap-4 mt-6">
+                    <button type="button" @click="open = false" class="btn btn-ghost">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Submit Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

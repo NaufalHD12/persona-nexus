@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from app.models import UserProfile, PostCategory, Game, Post, Comment, Vote
+from app.models import Report, UserProfile, PostCategory, Game, Post, Comment, Vote
 
 # Mendaftarkan model UserProfile kustom Anda
 # Kita mewarisi dari UserAdmin untuk mendapatkan semua fungsionalitas admin user bawaan
@@ -35,6 +35,7 @@ class CommentAdmin(admin.ModelAdmin):
 class GameAdmin(admin.ModelAdmin):
     list_display = ('title', 'slug')
     prepopulated_fields = {'slug': ('title',)} # Otomatis isi slug dari title
+    
 
 # === Daftarkan semua model Anda di sini ===
 admin.site.register(UserProfile, UserProfileAdmin)
@@ -43,3 +44,11 @@ admin.site.register(Game, GameAdmin)
 admin.site.register(Post, PostAdmin)
 admin.site.register(Comment, CommentAdmin)
 admin.site.register(Vote)
+
+
+@admin.register(Report)
+class ReportAdmin(admin.ModelAdmin):
+    list_display = ('reporter', 'content_object', 'reason', 'status', 'created_at')
+    list_filter = ('status', 'reason', 'created_at')
+    readonly_fields = ('reporter', 'content_object', 'reason', 'notes', 'created_at')
+    list_editable = ('status',)

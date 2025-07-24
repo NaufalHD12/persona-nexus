@@ -51,6 +51,22 @@
                                     </button>
                                 </div>
                             </div>
+                            {% else %}
+                            <div x-data="{ open: false }" class="relative flex-shrink-0">
+                                <button @click="open = !open" class="p-2 rounded-full hover:bg-gray-100">
+                                    <i data-feather="more-vertical" class="w-5 h-5 text-gray-600"></i>
+                                </button>
+                                <div x-show="open" @click.away="open = false" x-transition
+                                     class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 border">
+                                    <button hx-get="{% url 'create_report' model_name='post' pk=post.pk %}"
+                                            hx-target="#modal-container"
+                                            hx-swap="innerHTML"
+                                            @click="open = false"
+                                            class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i data-feather="flag" class="w-4 h-4"></i> Report Post
+                                    </button>
+                                </div>
+                            </div>
                             {% endif %}
                         </div>
                     </div>

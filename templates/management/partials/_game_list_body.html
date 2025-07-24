@@ -1,0 +1,7 @@
+{% for game in games %}
+    {% include 'management/partials/_game_row.html' %}
+{% empty %}
+<tr>
+    <td colspan="4" class="p-4 text-center text-gray-500">No games found.</td>
+</tr>
+{% endfor %}

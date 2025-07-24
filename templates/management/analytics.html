@@ -1,0 +1,129 @@
+{% extends 'management/base.html' %}
+
+{% block page_title %}Analytics & Insights{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Bagian Grafik -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Grafik Pertumbuhan Pengguna -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold font-poppins">User Growth (Last 30 Days)</h3>
+            <div class="mt-4">
+                <canvas id="userGrowthChart"></canvas>
+            </div>
+        </div>
+        <!-- Grafik Aktivitas Konten -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold font-poppins">Content Activity (Last 30 Days)</h3>
+            <div class="mt-4">
+                <canvas id="contentActivityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bagian Papan Peringkat -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Pengguna Teratas berdasarkan Karma -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold font-poppins mb-4">Top 5 Users by Karma</h3>
+            <ul class="space-y-4">
+                {% for user in top_users_by_karma %}
+                <li class="flex items-center gap-4">
+                    <img src="{{ user.avatar.url }}" alt="{{ user.username }}" class="w-10 h-10 rounded-full object-cover">
+                    <div class="flex-grow">
+                        <a href="{{ user.get_absolute_url }}" target="_blank" class="font-semibold text-deep-brown hover:underline">{{ user.username }}</a>
+                        <p class="text-sm text-gray-500">{{ user.posts.count }} posts</p>
+                    </div>
+                    <div class="flex items-center gap-1 text-yellow-600 font-bold">
+                        <i data-feather="star" class="w-4 h-4"></i>
+                        <span>{{ user.karma }}</span>
+                    </div>
+                </li>
+                {% empty %}
+                <p class="text-gray-500">Not enough data yet.</p>
+                {% endfor %}
+            </ul>
+        </div>
+        <!-- Postingan Terpopuler berdasarkan Vote -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold font-poppins mb-4">Top 5 Posts by Votes</h3>
+            <ul class="space-y-4">
+                {% for post in top_posts_by_votes %}
+                <li class="flex items-center gap-4">
+                    <div class="flex-grow">
+                        <a href="{{ post.get_absolute_url }}" target="_blank" class="font-semibold text-deep-brown hover:underline truncate block">{{ post.title }}</a>
+                        <p class="text-sm text-gray-500">by {{ post.author.username }}</p>
+                    </div>
+                    <div class="flex items-center gap-1 text-green-600 font-bold">
+                        <i data-feather="arrow-up" class="w-4 h-4"></i>
+                        <span>{{ post.score }}</span>
+                    </div>
+                </li>
+                {% empty %}
+                <p class="text-gray-500">Not enough data yet.</p>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Script untuk Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parse data dari Django template ke JavaScript
+        const labels = JSON.parse(`{{ chart_labels|safe }}`);
+        const userData = JSON.parse(`{{ user_growth_data|safe }}`);
+        const postData = JSON.parse(`{{ post_activity_data|safe }}`);
+        const commentData = JSON.parse(`{{ comment_activity_data|safe }}`);
+
+        // Grafik Pertumbuhan Pengguna
+        const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+        new Chart(userGrowthCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'New Users',
+                    data: userData,
+                    borderColor: 'rgb(79, 70, 229)',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // Grafik Aktivitas Konten
+        const contentActivityCtx = document.getElementById('contentActivityChart').getContext('2d');
+        new Chart(contentActivityCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'New Posts',
+                        data: postData,
+                        backgroundColor: 'rgb(59, 130, 246)',
+                    },
+                    {
+                        label: 'New Comments',
+                        data: commentData,
+                        backgroundColor: 'rgb(234, 179, 8)',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

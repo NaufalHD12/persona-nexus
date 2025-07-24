@@ -1,0 +1,18 @@
+{% load static%}
+
+<tr id="game-row-{{ game.pk }}">
+    <td class="px-4 py-4 whitespace-nowrap">
+        <div class="flex items-center gap-3">
+            <img class="h-10 w-10 rounded-md object-cover bg-gray-100" src="{% if game.game_logo %}{{ game.game_logo.url }}{% else %}{% static 'images/game-placeholder.png' %}{% endif %}" alt="{{ game.title }}'s logo">
+            <span class="text-sm font-semibold text-deep-brown">{{ game.title }}</span>
+        </div>
+    </td>
+    <td class="px-4 py-4 text-sm text-gray-500 max-w-xs truncate">{{ game.description|default:"-" }}</td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{{ game.slug }}</td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm">
+        <div class="flex items-center gap-2">
+            <button hx-get="{% url 'admin_game_update' pk=game.pk %}" hx-target="#modal-container" hx-swap="innerHTML" class="p-2 text-gray-500 hover:bg-gray-100 rounded-full"><i data-feather="edit-2" class="w-4 h-4"></i></button>
+            <button hx-get="{% url 'admin_game_delete' pk=game.pk %}" hx-target="#modal-container" hx-swap="innerHTML" class="p-2 text-red-600 hover:bg-red-100 rounded-full"><i data-feather="trash-2" class="w-4 h-4"></i></button>
+        </div>
+    </td>
+</tr>

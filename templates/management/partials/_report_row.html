@@ -1,0 +1,16 @@
+<tr id="report-row-{{ report.pk }}">
+    <td class="px-4 py-4 whitespace-nowrap text-sm">
+        <a href="{{ report.content_object.get_absolute_url }}" target="_blank" class="text-blue-600 hover:underline font-semibold">
+            View {{ report.content_type.model|title }}
+        </a>
+    </td>
+    <td class="px-4 py-4 text-sm">
+        <p class="font-semibold">{{ report.get_reason_display }}</p>
+        <p class="text-gray-500">{{ report.notes|default:"No notes provided."|truncatechars:50 }}</p>
+    </td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm">{{ report.reporter.username }}</td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{ report.created_at|date:"Y-m-d H:i" }}</td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm" id="report-actions-{{ report.pk }}">
+        {% include 'management/partials/_report_actions.html' %}
+    </td>
+</tr>

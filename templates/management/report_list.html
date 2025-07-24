@@ -1,0 +1,42 @@
+{% extends 'management/base.html' %}
+
+{% block page_title %}Manage Reports{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header and Filters -->
+    <div class="bg-white p-4 rounded-lg shadow-md">
+        <div class="flex flex-col sm:flex-row justify-between items-center">
+            <h2 class="text-xl font-semibold font-poppins">Report Queue</h2>
+            <div class="flex items-center gap-2 mt-4 sm:mt-0">
+                <a href="{% url 'admin_report_list' %}" class="px-3 py-1 text-sm font-semibold rounded-full {% if not request.GET.status %}bg-primary-accent text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
+                    All
+                </a>
+                {% for value, display in status_choices %}
+                <a href="?status={{ value }}" class="px-3 py-1 text-sm font-semibold rounded-full {% if request.GET.status == value %}bg-primary-accent text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
+                    {{ display }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Daftar Laporan -->
+    <div class="space-y-4" id="report-list-container">
+        {% for report in reports %}
+            {% include 'management/partials/_report_card.html' %}
+        {% empty %}
+        <div class="bg-white rounded-lg shadow-md p-8 text-center">
+            <i data-feather="check-circle" class="w-12 h-12 mx-auto text-green-500 mb-3"></i>
+            <h3 class="text-xl font-poppins font-bold">All Clear!</h3>
+            <p class="text-deep-brown-600 mt-1">No reports found for this filter.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Paginasi -->
+    <div class="mt-4">
+        {% include 'app/partials/_pagination.html' %}
+    </div>
+</div>
+{% endblock %}

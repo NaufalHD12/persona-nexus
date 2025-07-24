@@ -1,0 +1,25 @@
+{% load admin_tags %}
+<div x-data="{ open: true }" x-show="open" @keydown.escape.window="open = false" @close-modal.window="open = false" x-cloak>
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div @click.away="open = false" class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 text-center" x-show="open" x-transition>
+            <h2 class="text-3xl font-bold font-poppins text-red-700">Confirm Deletion</h2>
+            <p class="mt-4 text-deep-brown-800">
+                Are you sure you want to permanently delete this item?
+                <br>
+                <strong class="font-semibold text-lg mt-2 block">"{{ item }}"</strong>
+            </p>
+            <p class="mt-2 text-sm text-red-600">This action cannot be undone.</p>
+            <form hx-post="{{ delete_url }}" 
+                hx-target="#game-row-{{ item.pk }}"
+                hx-swap="outerHTML"
+                class="mt-8" 
+                @submit="open = false">
+                {% csrf_token %}
+                <div class="flex justify-center gap-4">
+                    <button type="button" @click="open = false" class="btn btn-outline">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

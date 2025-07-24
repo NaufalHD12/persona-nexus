@@ -1,0 +1,73 @@
+{% load humanize %}
+<tr id="user-row-{{ user.pk }}">
+    <td class="px-4 py-4 whitespace-nowrap">
+        <div class="flex items-center gap-3">
+            <img class="h-10 w-10 rounded-full object-cover" src="{{ user.avatar.url }}" alt="{{ user.username }}'s avatar">
+            <div>
+                <a href="{{ user.get_absolute_url }}" target="_blank" class="text-sm font-semibold text-deep-brown hover:underline">{{ user.username }}</a>
+                <div class="text-xs text-gray-500">{{ user.email }}</div>
+            </div>
+        </div>
+    </td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+        <div>Karma: <span class="font-semibold text-gray-800">{{ user.karma }}</span></div>
+        <div>Posts: <span class="font-semibold text-gray-800">{{ user.post_count }}</span></div>
+    </td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{ user.date_joined|naturalday }}</td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm">
+    <div x-data="{ open: false }" class="relative inline-block text-left">
+        <!-- Dropdown toggle button -->
+        <button @click="open = !open" type="button" class="inline-flex justify-center w-full px-3 py-1.5 text-sm font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-accent/50">
+            Actions
+            <i data-feather="chevron-down" class="w-4 h-4 ml-2 -mr-1"></i>
+        </button>
+        
+        <!-- Dropdown menu -->
+        <div x-show="open" 
+             @click.away="open = false" 
+             x-transition:enter="transition ease-out duration-100" 
+             x-transition:enter-start="transform opacity-0 scale-95" 
+             x-transition:enter-end="transform opacity-100 scale-100" 
+             x-transition:leave="transition ease-in duration-75" 
+             x-transition:leave-start="transform opacity-100 scale-100" 
+             x-transition:leave-end="transform opacity-0 scale-95" 
+             class="absolute right-0 z-10 w-56 mt-2 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" 
+             x-cloak>
+            <div class="py-1">
+                <!-- Toggle Active Status -->
+                <form hx-post="{% url 'admin_update_user_status' pk=user.pk %}" hx-target="#user-row-{{ user.pk }}" hx-swap="outerHTML">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_active">
+                    <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-left hover:bg-gray-100 {% if user == request.user %}cursor-not-allowed opacity-50{% endif %}" {% if user == request.user %}disabled{% endif %}>
+                        {% if user.is_active %}
+                            <i data-feather="slash" class="w-4 h-4 mr-2"></i>
+                            <span>Ban User</span>
+                        {% else %}
+                            <i data-feather="check-circle" class="w-4 h-4 mr-2"></i>
+                            <span>Activate User</span>
+                        {% endif %}
+                    </button>
+                </form>
+                
+                <!-- Toggle Staff Status -->
+                <form hx-post="{% url 'admin_update_user_status' pk=user.pk %}" hx-target="#user-row-{{ user.pk }}" hx-swap="outerHTML">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_staff">
+                    <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-left hover:bg-gray-100 {% if user == request.user %}cursor-not-allowed opacity-50{% endif %}" {% if user == request.user %}disabled{% endif %}>
+                        {% if user.is_staff %}
+                            <i data-feather="user" class="w-4 h-4 mr-2"></i>
+                            <span>Remove Staff</span>
+                        {% else %}
+                            <i data-feather="shield" class="w-4 h-4 mr-2"></i>
+                            <span>Make Staff</span>
+                        {% endif %}
+                    </button>
+                </form>
+                
+                <!-- Divider -->
+                <div class="border-t border-gray-100 my-1"></div>
+            </div>
+        </div>
+    </div>
+</td>
+</tr>
