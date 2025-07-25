@@ -53,11 +53,9 @@
 </div>
 
 <!-- Mobile: Button untuk membuka daftar percakapan (hanya tampil saat ada conversation) -->
-{% if conversation %}
 <button id="show-mobile-conversations" class="md:hidden fixed top-20 left-4 z-30 bg-white rounded-full p-3 shadow-lg border border-deep-brown-200">
     <i data-feather="message-square" class="w-5 h-5 text-deep-brown"></i>
 </button>
-{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

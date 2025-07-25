@@ -1,0 +1,66 @@
+{% extends 'base_guest.html' %}
+{% load static %}
+
+{% block head_title %}Welcome to the Nexus{% endblock head_title %}
+
+{% block body %}
+<div class="min-h-screen bg-soft-cream flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-8 md:p-12 text-center">
+        <h1 class="text-4xl font-bold font-poppins text-deep-brown">Welcome, {{ user.username }}!</h1>
+        <p class="mt-4 text-lg text-deep-brown-700 max-w-2xl mx-auto">
+            Let's personalize your experience. Follow some games and topics you're interested in to get a feed tailored just for you.
+        </p>
+
+        <form method="post" class="mt-8">
+            {% csrf_token %}
+
+            <!-- Bagian Game -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-semibold font-poppins text-left mb-4">Popular Games</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {% for game in games %}
+                    <label class="relative cursor-pointer">
+                        <input type="checkbox" name="games" value="{{ game.pk }}" class="peer sr-only">
+                        <div class="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-3 text-center transition-all duration-200 peer-checked:border-primary-accent peer-checked:ring-2 peer-checked:ring-primary-accent/50">
+                            {% if game.game_logo %}
+                            <img src="{{ game.game_logo.url }}" class="w-16 h-16 mx-auto rounded-md object-cover">
+                            {% else %}
+                            <div class="w-16 h-16 mx-auto rounded-md bg-gray-100 flex items-center justify-center">
+                                <i data-feather="image" class="w-8 h-8 text-gray-400"></i>
+                            </div>
+                            {% endif %}
+                            <p class="mt-2 text-sm font-semibold truncate">{{ game.title }}</p>
+                        </div>
+                        <div class="absolute top-2 right-2 w-5 h-5 bg-white border-2 border-gray-300 rounded-full flex items-center justify-center transition-all peer-checked:bg-primary-accent peer-checked:border-primary-accent">
+                            <i data-feather="check" class="w-3 h-3 text-white"></i>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Bagian Kategori -->
+            <div>
+                <h2 class="text-2xl font-semibold font-poppins text-left mb-4">Topics of Interest</h2>
+                <div class="flex flex-wrap gap-3">
+                    {% for category in categories %}
+                    <label class="relative cursor-pointer">
+                        <input type="checkbox" name="categories" value="{{ category.pk }}" class="peer sr-only">
+                        <div class="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 peer-checked:bg-secondary-accent peer-checked:text-white">
+                            <i data-feather="{{ category.get_icon }}" class="w-4 h-4"></i>
+                            <span>{{ category.name }}</span>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-10">
+                <button type="submit" class="btn btn-primary btn-lg w-full sm:w-auto">
+                    Finish & Enter the Nexus
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock body %}

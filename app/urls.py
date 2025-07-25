@@ -1,16 +1,17 @@
 from django.urls import path
 from .views import (
-    CreateReportView, PostListView, UserSearchAPIView, VoteView, GameListView, CategoryListView, PostDetailView, 
+    CreateReportView, GlobalSearchView, OnboardingView, PostListView, UserSearchAPIView, VoteView, GameListView, CategoryListView, PostDetailView, 
     AddCommentView, SettingsView, PostCreateView, ProfileDetailView, 
     FollowToggleView, FollowingPostListView, SavePostToggleView, 
     PostUpdateView, PostDeleteView, SuccessModalView, StartConversationView, 
     InboxView, SendMessageView, PollNewMessagesView, UnreadCountView,
-    NotificationUpdateView, NotificationListView, MarkNotificationsAsReadView,
-    MarkAsReadAndRedirectView, LoadNotificationDropdownView, GameDetailView,
+    NotificationUpdateView, NotificationListView, MarkAsReadAndRedirectView, LoadNotificationDropdownView, GameDetailView,
     CategoryDetailView, ToggleGameFollowView, ToggleCategoryFollowView # <-- Impor view baru
 )
 
 urlpatterns = [
+    path('welcome/onboarding/', OnboardingView.as_view(), name='onboarding'),
+    path('search/', GlobalSearchView.as_view(), name='search_results'),
     path('post/create/', PostCreateView.as_view(), name='create_post'),
     path("", PostListView.as_view(), name="home"),
     path("following/", FollowingPostListView.as_view(), name="following_feed"),

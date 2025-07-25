@@ -1,0 +1,327 @@
+{% extends 'base_guest.html' %}
+{% load static %}
+
+{% block head_title %}Community for Persona Fans{% endblock %}
+
+{% block body %}
+<div class="bg-soft-cream text-deep-brown" x-data="{
+    scrolled: false,
+    heroLoaded: false,
+    featuresInView: false,
+    statsInView: false,
+    ctaInView: false,
+    init() {
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+            this.scrolled = window.scrollY > 10;
+        });
+        
+        // Hero load animation
+        this.heroLoaded = true;
+        
+        // Intersection observers for scroll animations
+        this.$nextTick(() => {
+            const featureObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => this.featuresInView = entry.isIntersecting);
+            }, { threshold: 0.1 });
+            
+            const statsObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => this.statsInView = entry.isIntersecting);
+            }, { threshold: 0.1 });
+            
+            const ctaObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => this.ctaInView = entry.isIntersecting);
+            }, { threshold: 0.1 });
+            
+            featureObserver.observe(this.$refs.features);
+            statsObserver.observe(this.$refs.stats);
+            ctaObserver.observe(this.$refs.cta);
+        });
+    }
+}">
+    <!-- Header with scroll animation -->
+    <header class="sticky top-0 z-50 w-full p-4 transition-all duration-300" 
+            :class="{
+                'bg-soft-cream/80 backdrop-blur-sm border-b border-deep-brown-200/50 shadow-sm': scrolled,
+                'bg-soft-cream/0': !scrolled
+            }">
+        <div class="container mx-auto flex items-center justify-between">
+            <a href="{% url 'landing_page' %}" class="group flex items-center gap-2">
+                <svg class="h-8 w-auto text-deep-brown transition-all duration-300 group-hover:text-secondary-accent group-hover:rotate-12" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><title>Persona Nexus Velvet Key Logo</title><path d="M62.4,36.2c-7.2-7.2-18.9-7.2-26.1,0c-6.8,6.8-7.3,17.7-1.3,25.1l-21.9,21.9c-2.9,2.9-2.9,7.7,0,10.6c2.9,2.9,7.7,2.9,10.6,0l22-22c7.4,6,18.3,5.5,25.1-1.3C78,51.6,78,40.3,72.3,34.5C69.9,32.1,66.3,30.6,62.4,36.2z M48,48c-1.3,1.3-3.5,1.3-4.8,0s-1.3-3.5,0-4.8s3.5-1.3,4.8,0S49.3,46.7,48,48z M50,32.5c-9.7,0-17.5,7.8-17.5,17.5S40.3,67.5,50,67.5S67.5,59.7,67.5,50S59.7,32.5,50,32.5z"/><path d="M50,25C36.2,25,25,36.2,25,50s11.2,25,25,25s25-11.2,25-25S63.8,25,50,25z M50,70c-11,0-20-9-20-20s9-20,20-20s20,9,20,20S61,70,50,70z"/></svg>
+                <span class="text-2xl font-bold font-poppins text-deep-brown flex-shrink-0 transition-all duration-300 group-hover:text-secondary-accent hidden md:block">Persona Nexus</span>
+                <span class="text-2xl font-bold font-poppins text-deep-brown flex-shrink-0 transition-all duration-300 group-hover:text-secondary-accent md:hidden">PN</span>
+            </a>
+            <div class="flex items-center gap-2">
+                <a href="{% url 'account_login' %}" class="btn btn-ghost hover:-translate-y-0.5 transition-transform duration-300">Sign In</a>
+                <a href="{% url 'account_signup' %}" class="btn btn-primary hover:-translate-y-0.5 transition-transform duration-300 hover:shadow-lg">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section with loading animation -->
+        <div class="relative overflow-hidden">
+            <!-- Background Image with parallax effect -->
+            <img src="media/persona-series.jpg" 
+                 alt="Abstract background representing the Persona series aesthetic" 
+                 class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out"
+                 :class="{'scale-110': !scrolled, 'scale-100': scrolled}">
+            
+            <!-- Overlay Layer for Text Readability -->
+            <div class="absolute inset-0 bg-soft-cream/80 backdrop-blur-sm"></div>
+
+            <section class="py-20 md:py-32">
+                <div class="container mx-auto text-center px-4 relative z-10">
+                    <h1 class="text-5xl md:text-7xl font-bold font-poppins leading-tight"
+                        x-transition:enter="transition ease-out duration-1000"
+                        x-transition:enter-start="opacity-0 translate-y-10"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-show="heroLoaded">
+                        The Ultimate Hub for <br class="hidden md:block">
+                        <span class="text-secondary-accent relative inline-block">
+                            <span class="relative z-10">Persona Fans</span>
+                            <span class="absolute bottom-0 left-0 w-full h-2 bg-secondary-accent/30 -rotate-1 -z-0"
+                                  x-transition:enter="transition ease-out duration-1000 delay-500"
+                                  x-transition:enter-start="scale-x-0"
+                                  x-transition:enter-end="scale-x-100"
+                                  x-show="heroLoaded"></span>
+                        </span>.
+                    </h1>
+                    <p class="mt-6 text-lg md:text-xl max-w-3xl mx-auto text-deep-brown-700"
+                       x-transition:enter="transition ease-out duration-1000 delay-300"
+                       x-transition:enter-start="opacity-0 translate-y-5"
+                       x-transition:enter-end="opacity-100 translate-y-0"
+                       x-show="heroLoaded">
+                        Dive into deep discussions, share fan theories, showcase your creations, and connect with a passionate community that shares your love for the Persona series.
+                    </p>
+                    <div class="mt-10"
+                         x-transition:enter="transition ease-out duration-1000 delay-500"
+                         x-transition:enter-start="opacity-0 scale-90"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-show="heroLoaded">
+                        <a href="{% url 'account_signup' %}" class="btn btn-primary btn-lg hover:scale-105 transition-transform duration-300 hover:shadow-lg inline-flex items-center gap-2">
+                            Join the Nexus Today
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right animate-pulse"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Feature Showcase Section with staggered animations -->
+        <div class="overflow-hidden" x-ref="features">
+            <section class="py-16 md:py-24 bg-white">
+                <div class="container mx-auto px-4">
+                    <div class="text-center mb-12"
+                         x-transition:enter="transition ease-out duration-500"
+                         x-transition:enter-start="opacity-0 translate-y-5"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-show="featuresInView">
+                        <h2 class="text-4xl font-bold font-poppins">All Your Social Links, in One Place.</h2>
+                        <p class="mt-4 text-lg text-deep-brown-700">We've built the features you've always wanted in a fan community.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <!-- Feature 1: Community Hubs -->
+                        <div class="bg-soft-cream p-6 rounded-xl border border-deep-brown-200/50 hover:border-secondary-accent/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
+                             x-transition:enter="transition ease-out duration-500"
+                             x-transition:enter-start="opacity-0 translate-y-5"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-show="featuresInView"
+                             x-transition.delay.100ms>
+                            <div class="w-10 h-10 bg-primary-accent/10 rounded-full flex items-center justify-center">
+                                <i data-feather="server" class="w-6 h-6 text-primary-accent"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold font-poppins mt-4">Community Hubs</h3>
+                            <p class="mt-2 text-deep-brown-700">Dedicated spaces for each Persona game and topic. Follow your favorites to personalize your feed.</p>
+                        </div>
+                        <!-- Feature 2: Rich Discussions -->
+                        <div class="bg-soft-cream p-6 rounded-xl border border-deep-brown-200/50 hover:border-secondary-accent/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
+                             x-transition:enter="transition ease-out duration-500"
+                             x-transition:enter-start="opacity-0 translate-y-5"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-show="featuresInView"
+                             x-transition.delay.200ms>
+                            <div class="w-10 h-10 bg-primary-accent/10 rounded-full flex items-center justify-center">
+                                <i data-feather="edit-3" class="w-6 h-6 text-primary-accent"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold font-poppins mt-4">Rich Discussions</h3>
+                            <p class="mt-2 text-deep-brown-700">Create beautifully formatted posts with our rich text editor. Upvote the best comments and theories.</p>
+                        </div>
+                        <!-- Feature 3: Social Profiles -->
+                        <div class="bg-soft-cream p-6 rounded-xl border border-deep-brown-200/50 hover:border-secondary-accent/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
+                             x-transition:enter="transition ease-out duration-500"
+                             x-transition:enter-start="opacity-0 translate-y-5"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-show="featuresInView"
+                             x-transition.delay.300ms>
+                            <div class="w-10 h-10 bg-primary-accent/10 rounded-full flex items-center justify-center">
+                                <i data-feather="users" class="w-6 h-6 text-primary-accent"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold font-poppins mt-4">Social Profiles</h3>
+                            <p class="mt-2 text-deep-brown-700">Build your identity with custom profiles, track your Karma, and see who you're connected with.</p>
+                        </div>
+                        <!-- Feature 4: Real-time Interaction -->
+                        <div class="bg-soft-cream p-6 rounded-xl border border-deep-brown-200/50 hover:border-secondary-accent/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
+                             x-transition:enter="transition ease-out duration-500"
+                             x-transition:enter-start="opacity-0 translate-y-5"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-show="featuresInView"
+                             x-transition.delay.400ms>
+                            <div class="w-10 h-10 bg-primary-accent/10 rounded-full flex items-center justify-center">
+                                <i data-feather="bell" class="w-6 h-6 text-primary-accent"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold font-poppins mt-4">Real-time Interaction</h3>
+                            <p class="mt-2 text-deep-brown-700">Get instant notifications for mentions, replies, and new messages. Never miss a beat in the conversation.</p>
+                        </div>
+                        <!-- Feature 5: Private Messaging -->
+                        <div class="bg-soft-cream p-6 rounded-xl border border-deep-brown-200/50 hover:border-secondary-accent/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
+                             x-transition:enter="transition ease-out duration-500"
+                             x-transition:enter-start="opacity-0 translate-y-5"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-show="featuresInView"
+                             x-transition.delay.500ms>
+                            <div class="w-10 h-10 bg-primary-accent/10 rounded-full flex items-center justify-center">
+                                <i data-feather="message-square" class="w-6 h-6 text-primary-accent"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold font-poppins mt-4">Private Messaging</h3>
+                            <p class="mt-2 text-deep-brown-700">Connect one-on-one with other fans through our clean and simple direct messaging system.</p>
+                        </div>
+                        <!-- Feature 6: Moderation Tools -->
+                        <div class="bg-soft-cream p-6 rounded-xl border border-deep-brown-200/50 hover:border-secondary-accent/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
+                             x-transition:enter="transition ease-out duration-500"
+                             x-transition:enter-start="opacity-0 translate-y-5"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-show="featuresInView"
+                             x-transition.delay.600ms>
+                            <div class="w-10 h-10 bg-primary-accent/10 rounded-full flex items-center justify-center">
+                                <i data-feather="shield" class="w-6 h-6 text-primary-accent"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold font-poppins mt-4">Safe & Moderated</h3>
+                            <p class="mt-2 text-deep-brown-700">A friendly community space with easy-to-use reporting tools and an active moderation team.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Social Proof Section with counting animation -->
+        <div class="overflow-hidden" x-ref="stats">
+            <section class="py-16 md:py-24">
+                <div class="container mx-auto px-4 text-center">
+                    <h2 class="text-4xl font-bold font-poppins"
+                        x-transition:enter="transition ease-out duration-500"
+                        x-transition:enter-start="opacity-0 translate-y-5"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-show="statsInView">
+                        Join a Growing Community
+                    </h2>
+                    <div class="mt-8 flex flex-col md:flex-row justify-center items-center gap-8 md:gap-16">
+                        <div x-data="{ count: 0, target: {{ user_count }}, duration: 2000 }" 
+                             x-init="() => {
+                                 if (statsInView) {
+                                     const increment = target / (duration / 16);
+                                     const updateCount = () => {
+                                         if (count < target) {
+                                             count += increment;
+                                             if (count > target) count = target;
+                                             requestAnimationFrame(updateCount);
+                                         }
+                                     };
+                                     updateCount();
+                                 } else {
+                                     count = target;
+                                 }
+                             }"
+                             x-transition:enter="transition ease-out duration-500 delay-100"
+                             x-transition:enter-start="opacity-0 translate-y-5"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-show="statsInView">
+                            <p class="text-5xl font-bold text-secondary-accent" x-text="Math.round(count)">0</p>
+                            <p class="text-lg text-deep-brown-700">Members</p>
+                        </div>
+                        <div x-data="{ count: 0, target: {{ post_count }}, duration: 2000 }" 
+                             x-init="() => {
+                                 if (statsInView) {
+                                     const increment = target / (duration / 16);
+                                     const updateCount = () => {
+                                         if (count < target) {
+                                             count += increment;
+                                             if (count > target) count = target;
+                                             requestAnimationFrame(updateCount);
+                                         }
+                                     };
+                                     updateCount();
+                                 } else {
+                                     count = target;
+                                 }
+                             }"
+                             x-transition:enter="transition ease-out duration-500 delay-200"
+                             x-transition:enter-start="opacity-0 translate-y-5"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-show="statsInView">
+                            <p class="text-5xl font-bold text-secondary-accent" x-text="Math.round(count)">0</p>
+                            <p class="text-lg text-deep-brown-700">Posts Created</p>
+                        </div>
+                        <div x-data="{ count: 0, target: {{ game_count }}, duration: 2000 }" 
+                             x-init="() => {
+                                 if (statsInView) {
+                                     const increment = target / (duration / 16);
+                                     const updateCount = () => {
+                                         if (count < target) {
+                                             count += increment;
+                                             if (count > target) count = target;
+                                             requestAnimationFrame(updateCount);
+                                         }
+                                     };
+                                     updateCount();
+                                 } else {
+                                     count = target;
+                                 }
+                             }"
+                             x-transition:enter="transition ease-out duration-500 delay-300"
+                             x-transition:enter-start="opacity-0 translate-y-5"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-show="statsInView">
+                            <p class="text-5xl font-bold text-secondary-accent" x-text="Math.round(count)">0</p>
+                            <p class="text-lg text-deep-brown-700">Game Hubs</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Final CTA Section with pulse animation -->
+        <div class="overflow-hidden" x-ref="cta">
+            <section class="py-20 bg-deep-brown text-white">
+                <div class="container mx-auto px-4 text-center">
+                    <h2 class="text-4xl font-bold font-poppins"
+                        x-transition:enter="transition ease-out duration-500"
+                        x-transition:enter-start="opacity-0 translate-y-5"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-show="ctaInView">
+                        Ready to Enter the Velvet Room?
+                    </h2>
+                    <p class="mt-4 text-lg max-w-2xl mx-auto text-gray-300"
+                       x-transition:enter="transition ease-out duration-500 delay-100"
+                       x-transition:enter-start="opacity-0 translate-y-5"
+                       x-transition:enter-end="opacity-100 translate-y-0"
+                       x-show="ctaInView">
+                        Your journey begins now. Create an account and start connecting with Persona fans from around the world.
+                    </p>
+                    <div class="mt-8"
+                         x-transition:enter="transition ease-out duration-500 delay-200"
+                         x-transition:enter-start="opacity-0 scale-90"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-show="ctaInView">
+                        <a href="{% url 'account_signup' %}" class="btn btn-primary btn-lg hover:scale-105 transition-transform duration-300 hover:shadow-lg inline-flex items-center gap-2 animate-pulse">
+                            Create Your Free Account
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+{% endblock body %}

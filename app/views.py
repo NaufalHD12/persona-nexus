@@ -14,6 +14,7 @@ from django.utils import timezone
 from datetime import timedelta
 import json
 from django.db.models.functions import TruncDay
+from django.core.paginator import Paginator
 
 
 class PostListView(LoginRequiredMixin, ListView):
@@ -1100,4 +1101,96 @@ class AdminAnalyticsView(StaffRequiredMixin, TemplateView):
         context['post_activity_data'] = json.dumps(post_activity_data)
         context['comment_activity_data'] = json.dumps(comment_activity_data)
         
+        return context
+    
+    
+class OnboardingView(LoginRequiredMixin, View):
+    def get(self, request):
+        # Ambil beberapa game dan kategori populer untuk disarankan
+        popular_games = Game.objects.annotate(num_posts=Count('posts')).order_by('-num_posts')[:12]
+        all_categories = PostCategory.objects.all()
+        
+        context = {
+            'games': popular_games,
+            'categories': all_categories
+        }
+        return render(request, 'app/onboarding.html', context)
+
+    def post(self, request):
+        user = request.user
+        selected_game_ids = request.POST.getlist('games')
+        selected_category_ids = request.POST.getlist('categories')
+
+        # Tambahkan game yang dipilih ke daftar following pengguna
+        if selected_game_ids:
+            games_to_follow = Game.objects.filter(pk__in=selected_game_ids)
+            user.following_games.add(*games_to_follow)
+
+        # Tambahkan kategori yang dipilih ke daftar following pengguna
+        if selected_category_ids:
+            categories_to_follow = PostCategory.objects.filter(pk__in=selected_category_ids)
+            user.following_categories.add(*categories_to_follow)
+            
+        return redirect('home')
+    
+
+class GlobalSearchView(TemplateView):
+    template_name = 'app/search_results.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        query = self.request.GET.get('q', '')
+        result_type = self.request.GET.get('type', 'posts')
+
+        queryset = None
+        if not query:
+            # Jika tidak ada query, kembalikan queryset kosong
+            if result_type == 'posts':
+                queryset = Post.objects.none()
+            elif result_type == 'users':
+                queryset = UserProfile.objects.none()
+            elif result_type == 'games':
+                queryset = Game.objects.none()
+        else:
+            # Jalankan query berdasarkan tipe hasil
+            if result_type == 'users':
+                queryset = UserProfile.objects.filter(username__icontains=query).order_by('username')
+            elif result_type == 'games':
+                queryset = Game.objects.filter(title__icontains=query).order_by('title')
+            else: # Default ke 'posts'
+                queryset = Post.objects.filter(
+                    Q(title__icontains=query) | Q(content__icontains=query)
+                ).distinct().order_by('-created_at')
+
+        # Paginasi manual
+        paginator = Paginator(queryset, 10)  # 10 hasil per halaman
+        page_number = self.request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        context['query'] = query
+        context['result_type'] = result_type
+        context['page_obj'] = page_obj
+        context['is_paginated'] = page_obj.has_other_pages()
+        
+        # Atur nama variabel konteks yang benar untuk template
+        context[result_type] = page_obj.object_list
+        
+        return context
+    
+
+class LandingPageView(TemplateView):
+    template_name = 'landing_page.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        # Jika pengguna sudah login, alihkan ke halaman utama
+        if request.user.is_authenticated:
+            return redirect('home')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Ambil beberapa statistik untuk ditampilkan di landing page
+        context['user_count'] = UserProfile.objects.count()
+        context['post_count'] = Post.objects.count()
+        context['game_count'] = Game.objects.count()
         return context

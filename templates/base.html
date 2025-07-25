@@ -39,25 +39,122 @@
             background-color: rgba(0,0,0,0.2);
             border-radius: 3px;
         }
+
+        /* Improved mobile and tablet menu */
+        #mobile-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 40;
+            background-color: rgba(0,0,0,0.5);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            display: flex;
+        }
+
+        #mobile-menu.active {
+            transform: translateX(0);
+        }
+
+        #mobile-menu-content {
+            width: 80%;
+            max-width: 300px;
+            background: white;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        /* Tablet-specific adjustments */
+        @media (min-width: 640px) and (max-width: 1023px) {
+            /* Adjust header padding */
+            header {
+                padding: 1rem 2rem;
+            }
+            
+            /* Make search bar more prominent */
+            .search-form input {
+                width: 200px !important;
+            }
+            
+            /* Hide desktop nav on tablets */
+            .desktop-nav {
+                display: none !important;
+            }
+            
+            /* Make buttons slightly larger */
+            .btn {
+                padding: 0.5rem !important;
+            }
+            
+            /* Adjust dropdown widths */
+            .notification-dropdown {
+                width: 22rem;
+            }
+            
+            /* Make avatar larger on tablets */
+            .avatar-img {
+                width: 12rem !important;
+                height: 12rem !important;
+            }
+        }
+
+        /* Mobile dropdown positioning */
+        @media (max-width: 1024px) {
+            .dropdown-menu {
+                position: fixed !important;
+                top: 4rem !important;
+                left: 1rem !important;
+                right: 1rem !important;
+                width: auto !important;
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+            
+            /* Always show mobile menu button on tablets */
+            #mobile-menu-button {
+                display: block !important;
+            }
+        }
+
+        /* Desktop specific styles */
+        @media (min-width: 1025px) {
+            /* Ensure desktop nav is visible */
+            .desktop-nav {
+                display: flex !important;
+            }
+            
+            /* Hide mobile menu button on desktop */
+            #mobile-menu-button {
+                display: none !important;
+            }
+        }
+
+        /* Ensure header stays on top */
+        header {
+            z-index: 50;
+        }
     </style>
     <script src="https://unpkg.com/htmx.org@2.0.4" xintegrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 </head>
 <body class="antialiased flex flex-col min-h-screen bg-soft-cream" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     
     <!-- Header & Navbar -->
-    <header class="sticky top-0 z-30 w-full p-4 bg-soft-cream/90 backdrop-blur-sm border-b border-deep-brown-200/50">
+    <header class="sticky top-0 z-50 w-full p-4 bg-soft-cream/90 backdrop-blur-sm border-b border-deep-brown-200/50">
         <div class="container mx-auto flex items-center justify-between relative h-10">
             
             <!-- Bagian Kiri: Logo -->
             <div class="flex-1 flex justify-start">
                 <a href="{% url 'home' %}" class="group flex items-center gap-2">
                     <svg class="h-8 w-auto text-deep-brown transition-colors group-hover:text-secondary-accent" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><title>Persona Nexus Velvet Key Logo</title><path d="M62.4,36.2c-7.2-7.2-18.9-7.2-26.1,0c-6.8,6.8-7.3,17.7-1.3,25.1l-21.9,21.9c-2.9,2.9-2.9,7.7,0,10.6c2.9,2.9,7.7,2.9,10.6,0l22-22c7.4,6,18.3,5.5,25.1-1.3C78,51.6,78,40.3,72.3,34.5C69.9,32.1,66.3,30.6,62.4,36.2z M48,48c-1.3,1.3-3.5,1.3-4.8,0s-1.3-3.5,0-4.8s3.5-1.3,4.8,0S49.3,46.7,48,48z M50,32.5c-9.7,0-17.5,7.8-17.5,17.5S40.3,67.5,50,67.5S67.5,59.7,67.5,50S59.7,32.5,50,32.5z"/><path d="M50,25C36.2,25,25,36.2,25,50s11.2,25,25,25s25-11.2,25-25S63.8,25,50,25z M50,70c-11,0-20-9-20-20s9-20,20-20s20,9,20,20S61,70,50,70z"/></svg>
-                    <span class="text-2xl font-bold font-poppins text-deep-brown flex-shrink-0 transition-colors group-hover:text-secondary-accent">Persona Nexus</span>
+                    <span class="text-2xl font-bold font-poppins text-deep-brown flex-shrink-0 transition-colors group-hover:text-secondary-accent hidden md:block">Persona Nexus</span>
+                    <span class="text-2xl font-bold font-poppins text-deep-brown flex-shrink-0 transition-colors group-hover:text-secondary-accent md:hidden">PN</span>
                 </a>
             </div>
             
             <!-- Bagian Tengah: Navigasi Desktop -->
-            <nav class="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-6">
+            <nav class="desktop-nav hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-6">
                 <a href="{% url 'home' %}" 
                    class="font-poppins py-2 px-3 md:px-5 border-b-4 whitespace-nowrap transition-colors
                    {% if request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'following_feed' %}
@@ -98,7 +195,6 @@
                         hx-get="{% url 'unread_count' %}"
                         hx-trigger="every 3s"
                         hx-swap="innerHTML">
-                       {# Tampilkan status awal dari context processor #}
                        {% include 'app/partials/_dm_badge.html' %}
                    </div>
                 </a>
@@ -107,6 +203,14 @@
             <!-- Bagian Kanan: Menu Pengguna -->
             <div class="flex-1 flex justify-end">
                 <div class="flex items-center gap-3">
+                    <form method="get" action="{% url 'search_results' %}" class="relative hidden lg:block search-form">
+                        <input type="search" name="q" placeholder="Search Persona Nexus..."
+                            class="w-full md:w-64 pl-10 pr-4 py-2 border-2 border-deep-brown-200 rounded-full"
+                            value="{{ request.GET.q }}">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-deep-brown-400">
+                            <i data-feather="search" class="w-5 h-5"></i>
+                        </span>
+                    </form>
                     <a href="{% url 'create_post' %}" title="Create Post" class="btn btn-primary !p-2 !rounded-full">
                         <i data-feather="plus" class="h-6 w-6"></i>
                     </a>
@@ -114,7 +218,6 @@
                     <!-- Dropdown Notifikasi -->
                     <div x-data="{ open: false }" class="relative">
                         <button @click="open = !open"
-                                {# 1. Memicu HTMX saat diklik untuk memuat konten #}
                                 hx-get="{% url 'load_notification_dropdown' %}"
                                 hx-target="#notification-dropdown-content"
                                 hx-trigger="click"
@@ -126,10 +229,8 @@
                         </button>
                         
                         <div x-show="open" @click.away="open = false" x-cloak
-                             class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg z-20">
-                            {# 2. Wadah ini sekarang akan diisi secara dinamis oleh HTMX #}
+                             class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg z-20 dropdown-menu">
                             <div id="notification-dropdown-content">
-                                {# Placeholder saat dropdown belum dimuat #}
                                 <div class="p-4 text-center text-sm text-gray-500">
                                     <i data-feather="loader" class="animate-spin mx-auto"></i>
                                 </div>
@@ -148,7 +249,7 @@
                         </button>
                         
                         <div x-show="open" @click.away="open = false" x-transition x-cloak
-                            class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20">
+                            class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 dropdown-menu">
                             <a href="{% url 'profile_detail' username=request.user.username %}" class="flex items-center gap-3 px-4 py-2 text-sm text-deep-brown-700 hover:bg-gray-100">
                                 <i data-feather="user" class="w-4 h-4"></i> My Profile
                             </a>
@@ -178,28 +279,79 @@
                     </div>
 
                     <!-- Tombol Menu Mobile -->
-                    <button id="mobile-menu-button" class="md:hidden p-2">
+                    <button id="mobile-menu-button" class="lg:hidden p-2">
                         <i data-feather="menu" class="h-6 w-6"></i>
                     </button>
                 </div>
             </div>
         </div>
     </header>
-    <!-- Mobile Menu Dropdown -->
-    <div id="mobile-menu" class="hidden md:hidden bg-white shadow-lg border-t border-gray-200">
-        <div class="container mx-auto px-4 py-3 flex flex-col space-y-3">
-            <a href="{% url 'home' %}" class="font-poppins py-2 px-3 border-b-2 border-transparent hover:border-primary-accent text-deep-brown font-semibold">
-                Home
-            </a>
-            <a href="{% url 'game_directory' %}" class="font-poppins py-2 px-3 border-b-2 border-transparent hover:border-primary-accent text-deep-brown font-semibold">
-                Games
-            </a>
-            <a href="{% url 'categories' %}" class="font-poppins py-2 px-3 border-b-2 border-transparent hover:border-primary-accent text-deep-brown font-semibold">
-                Categories
-            </a>
-            <a href="{% url 'message_inbox' %}" class="font-poppins py-2 px-3 border-b-2 border-transparent hover:border-primary-accent text-deep-brown font-semibold">
-                Messages
-            </a>
+
+    <!-- Mobile & Tablet Menu Sidebar -->
+    <div id="mobile-menu" class="hidden lg:hidden">
+        <div id="mobile-menu-content">
+            <div class="p-4 border-b border-deep-brown-200 flex items-center justify-between">
+                <h1 class="text-xl font-bold font-poppins text-deep-brown">Menu</h1>
+                <button id="close-mobile-menu" class="p-2 text-deep-brown-600 hover:text-deep-brown">
+                    <i data-feather="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-4 flex flex-col space-y-3">
+                <a href="{% url 'home' %}" class="font-poppins py-2 px-3 border-b-2 border-transparent hover:border-primary-accent text-deep-brown font-semibold">
+                    Home
+                </a>
+                <a href="{% url 'game_directory' %}" class="font-poppins py-2 px-3 border-b-2 border-transparent hover:border-primary-accent text-deep-brown font-semibold">
+                    Games
+                </a>
+                <a href="{% url 'categories' %}" class="font-poppins py-2 px-3 border-b-2 border-transparent hover:border-primary-accent text-deep-brown font-semibold">
+                    Categories
+                </a>
+                <a href="{% url 'message_inbox' %}" class="font-poppins py-2 px-3 border-b-2 border-transparent hover:border-primary-accent text-deep-brown font-semibold">
+                    Messages
+                </a>
+                <form method="get" action="{% url 'search_results' %}" class="relative mt-4">
+                    <input type="search" name="q" placeholder="Search Persona Nexus..."
+                        class="w-full pl-10 pr-4 py-2 border-2 border-deep-brown-200 rounded-full"
+                        value="{{ request.GET.q }}">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-deep-brown-400">
+                        <i data-feather="search" class="w-5 h-5"></i>
+                    </span>
+                </form>
+            </div>
+            
+            <!-- User Profile Section in Mobile Menu -->
+            <div class="p-4 border-t border-deep-brown-200 mt-4">
+                <div class="flex items-center gap-3 mb-4">
+                    {% if request.user.avatar and request.user.avatar.url %}
+                        <img src="{{ request.user.avatar.url }}" alt="User Avatar" class="w-12 h-12 rounded-full border-2 border-primary-accent object-cover">
+                    {% else %}
+                        <img src="{% static 'images/avatars/default.png' %}" alt="Default Avatar" class="w-12 h-12 rounded-full border-2 border-primary-accent object-cover">
+                    {% endif %}
+                    <div>
+                        <p class="font-semibold text-deep-brown">{{ request.user.username }}</p>
+                        <p class="text-sm text-deep-brown-600">{{ request.user.email }}</p>
+                    </div>
+                </div>
+                <div class="flex flex-col space-y-2">
+                    <a href="{% url 'profile_detail' username=request.user.username %}" class="flex items-center gap-2 px-3 py-2 text-deep-brown-700 hover:bg-gray-100 rounded-lg">
+                        <i data-feather="user" class="w-4 h-4"></i> My Profile
+                    </a>
+                    <a href="{% url 'account_settings' %}" class="flex items-center gap-2 px-3 py-2 text-deep-brown-700 hover:bg-gray-100 rounded-lg">
+                        <i data-feather="settings" class="w-4 h-4"></i> Settings
+                    </a>
+                    {% if user.is_staff %}
+                    <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                        <i data-feather="shield" class="w-4 h-4"></i> Admin Dashboard
+                    </a>
+                    {% endif %}
+                    <form method="post" action="{% url 'account_logout' %}" class="border-t border-deep-brown-200 pt-2 mt-2">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full flex items-center gap-2 px-3 py-2 text-red-700 hover:bg-red-50 rounded-lg">
+                            <i data-feather="log-out" class="w-4 h-4"></i> Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -265,16 +417,44 @@
             if (window.feather) {
                 feather.replace();
             }
-        });
-        feather.replace();
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
-        if (mobileMenuButton) {
-            mobileMenuButton.addEventListener('click', () => {
-                mobileMenu.classList.toggle('hidden');
-            });
-        }
 
+            // Enhanced mobile menu toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const closeMobileMenuButton = document.getElementById('close-mobile-menu');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            function toggleMobileMenu() {
+                mobileMenu.classList.toggle('hidden');
+                mobileMenu.classList.toggle('active');
+                
+                // Change icon based on state
+                const icon = mobileMenuButton.querySelector('i');
+                if (mobileMenu.classList.contains('active')) {
+                    icon.setAttribute('data-feather', 'x');
+                } else {
+                    icon.setAttribute('data-feather', 'menu');
+                }
+                feather.replace();
+            }
+            
+            if (mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', toggleMobileMenu);
+            }
+            
+            if (closeMobileMenuButton) {
+                closeMobileMenuButton.addEventListener('click', toggleMobileMenu);
+            }
+
+            // Close mobile menu when clicking outside
+            mobileMenu?.addEventListener('click', function(e) {
+                if (e.target === mobileMenu) {
+                    toggleMobileMenu();
+                }
+            });
+        });
+
+        feather.replace();
+        
         document.addEventListener('DOMContentLoaded', function () {
             // --- Logika Suara Notifikasi ---
 

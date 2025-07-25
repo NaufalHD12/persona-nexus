@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head_title %}Search Results for "{{ query }}"{% endblock head_title %}
+
+{% block body %}
+<main class="container mx-auto p-4 md:p-6 lg:p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold font-poppins text-deep-brown">Search Results for</h1>
+            <p class="text-lg text-deep-brown-700 mt-2">"{{ query }}"</p>            
+        </header>
+
+        <!-- Navigasi Tab -->
+        <div class="border-b-2 border-deep-brown-200 mb-6">
+            <nav class="flex gap-4 -mb-0.5" aria-label="Tabs">
+                <a href="?q={{ query }}&type=posts" 
+                   class="font-poppins py-2 px-4 border-b-4 {% if result_type == 'posts' %}border-primary-accent text-deep-brown font-semibold{% else %}border-transparent text-deep-brown-600 hover:text-secondary-accent transition{% endif %}">
+                    Posts
+                </a>
+                <a href="?q={{ query }}&type=users" 
+                   class="font-poppins py-2 px-4 border-b-4 {% if result_type == 'users' %}border-primary-accent text-deep-brown font-semibold{% else %}border-transparent text-deep-brown-600 hover:text-secondary-accent transition{% endif %}">
+                    Users
+                </a>
+                <a href="?q={{ query }}&type=games" 
+                   class="font-poppins py-2 px-4 border-b-4 {% if result_type == 'games' %}border-primary-accent text-deep-brown font-semibold{% else %}border-transparent text-deep-brown-600 hover:text-secondary-accent transition{% endif %}">
+                    Games
+                </a>
+            </nav>
+        </div>
+
+        <!-- Konten Hasil Pencarian -->
+        <div class="space-y-6">
+            {% if result_type == 'posts' %}
+                {% for post in posts %}
+                    {% include 'app/partials/_post_card_simple.html' with post=post %}
+                {% empty %}
+                    <p class="text-center text-gray-500 py-8">No posts found matching your search.</p>
+                {% endfor %}
+            {% elif result_type == 'users' %}
+                <div class="bg-white rounded-lg shadow-sm p-6 space-y-4">
+                {% for user_obj in users %}
+                    {% include 'app/partials/_user_card.html' with user_obj=user_obj %}
+                {% empty %}
+                    <p class="text-center text-gray-500 py-8">No users found matching your search.</p>
+                {% endfor %}
+                </div>
+            {% elif result_type == 'games' %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {% for game in games %}
+                    <a href="{{ game.get_absolute_url }}" class="group bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-shadow">
+                        <div class="relative">
+                            <img src="{% if game.game_logo %}{{ game.game_logo.url }}{% else %}{% static 'images/game-placeholder.png' %}{% endif %}" alt="{{ game.title }} logo" class="w-full h-32 object-cover">
+                        </div>
+                        <div class="p-4">
+                            <h2 class="text-lg font-semibold text-deep-brown-800 truncate">{{ game.title }}</h2>
+                            <p class="text-sm text-gray-500 mt-1">{{ game.posts.count }} posts</p>
+                        </div>
+                    </a>
+                {% empty %}
+                    <p class="col-span-full text-center text-gray-500 py-8">No games found matching your search.</p>
+                {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Paginasi -->
+        <div class="mt-8">
+            {% include 'app/partials/_pagination.html' %}
+        </div>
+    </div>
+</main>
+{% endblock body %}

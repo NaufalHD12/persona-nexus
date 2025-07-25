@@ -5,17 +5,17 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from allauth.account.views import SignupView
+# Hapus SignupView, kita akan gunakan view baru
+from app.views import LandingPageView # <-- Impor view baru
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', SignupView.as_view(), name="landing_signup"),
+    # === UBAH URL ROOT DI SINI ===
+    path('', LandingPageView.as_view(), name="landing_page"), 
     path('accounts/', include('allauth.urls')),
     path('feed/', include("app.urls")),
     path('tinymce/', include('tinymce.urls')),
     path('__reload__/', include('django_browser_reload.urls')),
-
-    # === TAMBAHKAN URL UNTUK ADMIN KUSTOM DI SINI ===
     path('management/', include('app.management_urls')),
 ]
 
